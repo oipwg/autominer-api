@@ -3,7 +3,7 @@ Automatically rent miners based on the current cost to mine the currency.
 
 ## API Endpoints:
 `/info`: Responds with JSON that includes the following data:
-```json
+```javascript
 {
 	'pool_hashrate': 978670933, 		// The current hashrate of the Alexandria Pool
 	'networkhashp's: 1974515030, 		// Current hashrate of all florincoin miners
@@ -28,7 +28,7 @@ Automatically rent miners based on the current cost to mine the currency.
 }
 ```
 `/status`: Requires the post of an API key, responds with JSON that includes the following data from the status of ongoing rentals:
-```json
+```javascript
 {
 	'1hash_rented': 191879347, 		// Current hashrate
 	'week_spent_btc': 0.4872, 		// Amount of BTC spent in the current week
@@ -49,7 +49,7 @@ Automatically rent miners based on the current cost to mine the currency.
 }
 ```
 `/config`: Requires the post of an API key in order to get config info, you can post any variables below in order to change them. Responds with JSON that includes the following data from the current config:
-```json
+```javascript
 {
 	'weekly_budget_btc': 1, // Maximum budget to spend per week in BTC
 	'min_margin': 10,		// Margin that you wish to make by mining
