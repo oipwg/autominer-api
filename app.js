@@ -154,7 +154,7 @@ function rentMiners(){
 	    	var totalCost = 0;
 	    	var totalNewHash = 0;
 	    	for (var i = 0; i < goodRigs.length; i++) {
-	    		if (goodRigs[i].rpi > config['RPI_threshold'] && (totalCost + parseFloat(goodRigs[i].price_hr)) < ((config['weekly_budget_btc']/168)*config['rental_length_hrs']) && calculations['pool_margin'] >= config['min_margin']){
+	    		if (goodRigs[i].rpi > config['RPI_threshold'] && goodRigs[i].maxhrs > config.rental_length_hrs && (totalCost + parseFloat(goodRigs[i].price_hr)) < ((config['weekly_budget_btc']/168)*config['rental_length_hrs']) && calculations['pool_margin'] >= config['min_margin']){
 	    			rigsToRent.push(goodRigs[i]);
 	    			totalNewHash += parseFloat(goodRigs[i].hashrate);
 	    			totalCost += parseFloat(goodRigs[i].price_hr)*config['rental_length_hrs'];
