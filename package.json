@@ -1,0 +1,23 @@
+{
+  "name": "autominer-api",
+  "version": "1.0.0",
+  "description": "Automatically rent miners based on the current cost to mine the currency.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dloa/autominer-api.git"
+  },
+  "author": "Skylar Ostler <sky@alexandria.io>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dloa/autominer-api/issues"
+  },
+  "homepage": "https://github.com/dloa/autominer-api#readme",
+  "dependencies": {
+    "express": "^4.14.0",
+    "request": "^2.72.0"
+  }
+}
