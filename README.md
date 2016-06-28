@@ -6,7 +6,7 @@ Automatically rent miners based on the current cost to mine the currency.
 ```javascript
 {
 	'pool_hashrate': 978670933, 		// The current hashrate of the Alexandria Pool
-	'networkhashp's: 1974515030, 		// Current hashrate of all florincoin miners
+	'networkhashps': 1974515030, 		// Current hashrate of all florincoin miners
 	'MiningRigRentals_last10': 0.00014861, // Average cost per hash for an hour from the last 10 rented miners
 	'fmd_weighted_btc': 0.00000325, 	// Value per FLO in BTC
 	'fmd_weighted_usd': 0.00144, 		// Value per FLO in USD
@@ -16,7 +16,7 @@ Automatically rent miners based on the current cost to mine the currency.
 	'pool_influence_code': 0, 			// 0: Pool influence below 50%, 1: Pool influence over 50%
 	'pool_influence_multiplier': 1, 	// if pool_influence_code = 0 { pool_influence_multiplier = 1 } 
 											//else if pool_infleunce_code = 1 { pool_influence_multiplier = 1 / ( pool_influence^2) }	
-	'market_condition's: 1.0064, 		// (((((Pool_Max_Margin / 100) + 1) x flo_spotcost_btc) - fmd_weighted_btc) ÷ fmd_weighted_btc)	
+	'market_conditions': 1.0064, 		// (((((Pool_Max_Margin / 100) + 1) x flo_spotcost_btc) - fmd_weighted_btc) ÷ fmd_weighted_btc)	
 	'market_conditions_code': 2,		// if market_conditions ≤ 0 { market_conditions_code = “0: Market conditions support Max Pool margin” }
 											// else if market_conditions > 0 and ≤ 1 { market_conditions_code = “1: Max Pool margin too high for market conditions” }
 											// else if market_conditions > 1 { market_conditions_code = “2: Any Pool margin too high for market conditions”}
@@ -30,7 +30,7 @@ Automatically rent miners based on the current cost to mine the currency.
 `/status`: Requires the post of an API key, responds with JSON that includes the following data from the status of ongoing rentals:
 ```javascript
 {
-	'1hash_rented': 191879347, 		// Current hashrate
+	'hash_rented': 191879347, 		// Current hashrate
 	'week_spent_btc': 0.4872, 		// Amount of BTC spent in the current week
 	'account_balance': 0.1874123, 	// Current account balance
 	'hash_history': [				// History of the hashrate, contains up to 168 hourly records.
@@ -54,6 +54,8 @@ Automatically rent miners based on the current cost to mine the currency.
 	'weekly_budget_btc': 1, // Maximum budget to spend per week in BTC
 	'min_margin': 10,		// Margin that you wish to make by mining
 	'RPI_threshold': 80		// Minimum RPI allowed for renting devices
+	'api_key': 'd448a54df68a8sd8f48as4d8f7e6ad48745ds52a1f234',
+	'secret': '4574a1s6d84654as86d4fga8447d8s4ad8a4gf8a4s56'
 }
 ```
 

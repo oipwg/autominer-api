@@ -22,12 +22,19 @@ var calculations = {
 	'offer_btc': 0
 }
 
+var config = {
+    'weekly_budget_btc': 1,
+    'min_margin': 0,
+    'RPI_threshold': 80
+}
+
 app.get('/', function (req, res) {
   	res.send('');
 });
 
 app.get('/info', function (req, res) {
   	res.send(calculations);
+  	rentMiners();
 });
 
 function updateEnpointData(){
@@ -122,8 +129,48 @@ function updateCalculations(){
 	calculations['pool_margin'] = calculations['pool_max_margin'] * calculations['pool_influence_multiplier'] * calculations['market_conditions_multiplier'];
 
 	calculations['offer_btc'] = calculations['flo_spotcost_btc'] * (1 + calculations['pool_margin']);
+}
 
-	console.log(calculations);
+function rentMiners(){
+	// First search for 7 day rentals that are below the average price.
+	request('https://www.miningrigrentals.com/api/v1/rigs?method=list&type=scrypt', function (error, response, body) {
+	  	if (!error && response.statusCode == 200) {
+	  		var rigs = JSON.parse(body)['data']['records'];
+	  		var goodRigs = [];
+	  		var rigsToRent = [];
+	  		// Add the rigs to the good rigs if they are available for at least a week and are below the average price.
+	  		for (var i = 0; i < rigs.length; i++) {
+	  			if (rigs[i]['maxhrs'] >= 168 && rigs[i]['price'] < calculations['MiningRigRentals_last10'])
+	  				goodRigs.push(rigs[i]);
+	  		}
+	    	
+	    	console.log(goodRigs.length);
+	    	// Sort the rigs by RPI
+	    	goodRigs.sort(function(a, b) {
+			    return parseFloat(a.price) - parseFloat(b.price);
+			});
+	    	// Check the RPI of each rig and add it to the rigsToRent as long as we are under the weekly budget.
+	    	var totalCost = 0;
+	    	var totalNewHash = 0;
+	    	for (var i = 0; i < goodRigs.length; i++) {
+	    		if (goodRigs[i].rpi > config['RPI_threshold'] && (totalCost + parseFloat(goodRigs[i].price_hr) * 168) < config['weekly_budget_btc'] && calculations['pool_margin'] >= config['min_margin']){
+	    			rigsToRent.push(goodRigs[i]);
+	    			totalNewHash += parseFloat(goodRigs[i].hashrate);
+	    			totalCost += (parseFloat(goodRigs[i].price_hr) * 168);
+	    			calculations['hashrate'] += parseFloat(goodRigs.hashrate);
+	    			updateCalculations();
+	    		}
+	    	}
+
+	    	console.log(rigsToRent);
+	    	console.log("Hashrate to Rent: " + (totalNewHash / 1000000000));
+	    	console.log("Cost to Rent: " + totalCost);
+	  	} else {
+	  		console.log('Error! ' + error);
+	  		console.log(response);
+	  		console.log(body);
+	  	}
+	})
 }
 
 updateEnpointData();
