@@ -158,7 +158,7 @@ function rentMiners(){
 	    			rigsToRent.push(goodRigs[i]);
 	    			totalNewHash += parseFloat(goodRigs[i].hashrate);
 	    			totalCost += parseFloat(goodRigs[i].price_hr)*config['rental_length_hrs'];
-	    			calculations['hashrate'] += parseFloat(goodRigs.hashrate);
+	    			calculations['pool_hashrate'] += parseFloat(goodRigs.hashrate);
 	    			goodRigs.splice(i, 1);
 	    			updateCalculations();
 	    		}
@@ -168,7 +168,7 @@ function rentMiners(){
 	    			rigsToRent.push(goodRigs[i]);
 	    			totalNewHash += parseFloat(goodRigs[i].hashrate);
 	    			totalCost += parseFloat(goodRigs[i].price_hr)*config['rental_length_hrs'];
-	    			calculations['hashrate'] += parseFloat(goodRigs.hashrate);
+	    			calculations['pool_hashrate'] += parseFloat(goodRigs.hashrate);
 	    			updateCalculations();
 	    		}
 	    	}
