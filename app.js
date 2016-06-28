@@ -23,10 +23,10 @@ var calculations = {
 }
 
 var config = {
-    'weekly_budget_btc': 0.1,
+    'weekly_budget_btc': 1,
     'min_margin': 0,
     'RPI_threshold': 80,
-    'rental_length_hrs': 2
+    'rental_length_hrs': 24
 }
 
 app.get('/', function (req, res) {
@@ -141,7 +141,7 @@ function rentMiners(){
 	  		var rigsToRent = [];
 	  		// Add the rigs to the good rigs if they are available for at least a week and are below the average price.
 	  		for (var i = 0; i < rigs.length; i++) {
-	  			if (rigs[i]['maxhrs'] >= 168 && rigs[i]['price'] < calculations['MiningRigRentals_last10'])
+	  			if (rigs[i]['minhrs'] <= config.rental_length_hrs && rigs[i]['maxhrs'] >= config.rental_length_hrs)
 	  				goodRigs.push(rigs[i]);
 	  		}
 	    	
@@ -154,7 +154,17 @@ function rentMiners(){
 	    	var totalCost = 0;
 	    	var totalNewHash = 0;
 	    	for (var i = 0; i < goodRigs.length; i++) {
-	    		if (goodRigs[i].rpi > config['RPI_threshold'] && goodRigs[i].maxhrs > config.rental_length_hrs && (totalCost + parseFloat(goodRigs[i].price_hr)) < ((config['weekly_budget_btc']/168)*config['rental_length_hrs']) && calculations['pool_margin'] >= config['min_margin']){
+	    		if (goodRigs[i].rpi >= config['RPI_threshold'] && goodRigs[i]['price'] < calculations['MiningRigRentals_last10'] && (totalCost + parseFloat(goodRigs[i].price_hr)) <= ((config['weekly_budget_btc']/168)*config['rental_length_hrs']) && calculations['pool_margin'] >= config['min_margin']){
+	    			rigsToRent.push(goodRigs[i]);
+	    			totalNewHash += parseFloat(goodRigs[i].hashrate);
+	    			totalCost += parseFloat(goodRigs[i].price_hr)*config['rental_length_hrs'];
+	    			calculations['hashrate'] += parseFloat(goodRigs.hashrate);
+	    			goodRigs.splice(i, 1);
+	    			updateCalculations();
+	    		}
+	    	}
+	    	for (var i = 0; i < goodRigs.length; i++) {
+	    		if (goodRigs[i].rpi > config['RPI_threshold'] && (totalCost + parseFloat(goodRigs[i].price_hr)) <= ((config['weekly_budget_btc']/168)*config['rental_length_hrs']) && calculations['pool_margin'] >= config['min_margin']){
 	    			rigsToRent.push(goodRigs[i]);
 	    			totalNewHash += parseFloat(goodRigs[i].hashrate);
 	    			totalCost += parseFloat(goodRigs[i].price_hr)*config['rental_length_hrs'];
