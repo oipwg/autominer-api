@@ -27,6 +27,7 @@ var config = {
     'min_margin': 0,
     'RPI_threshold': 80,
     'rental_length_hrs': 24
+	'api_key': 'password',
 }
 
 app.get('/', function (req, res) {
@@ -130,6 +131,12 @@ function updateCalculations(){
 	calculations['pool_margin'] = calculations['pool_max_margin'] * calculations['pool_influence_multiplier'] * calculations['market_conditions_multiplier'];
 
 	calculations['offer_btc'] = calculations['flo_spotcost_btc'] * (1 + calculations['pool_margin']);
+
+	// Now that we have calculated everything, round the numbers to look nicer.
+	calculations['flo_spotcost_btc'] = parseFloat(calculations['flo_spotcost_btc'].toFixed(8));
+	calculations['flo_spotcost_usd'] = parseFloat(calculations['flo_spotcost_usd'].toFixed(8));
+	calculations['market_conditions'] = parseFloat(calculations['market_conditions'].toFixed(8));
+	calculations['offer_btc'] = parseFloat(calculations['offer_btc'].toFixed(8));
 }
 
 function rentMiners(){
