@@ -1,5 +1,6 @@
 var express = require('express');
 var request = require('request');
+var MiningRigRentalsAPI = require('miningrigrentals-api');
 var app = express();
 
 // Set the default calculations
@@ -183,6 +184,32 @@ function rentMiners(){
 	    	console.log(rigsToRent);
 	    	console.log("Hashrate to Rent: " + (totalNewHash / 1000000000));
 	    	console.log("Cost to Rent: " + totalCost);
+
+	    	var MRRAPI = new MiningRigRentalsAPI(config.MRR_API_key, config.MRR_API_secret);
+
+	    	MRRAPI.getBalance(function(error, response){
+			    if (error){
+			        console.log(error);
+			        return;
+			    }
+			    console.log(response);
+			    var balance = JSON.parse(response)['data']['confirmed'];
+			    console.log(balance);
+			    if (parseFloat(balance) > totalCost){
+			    	for (var i = 0; i < rigsToRent.length; i++) {
+			    		console.log(rigsToRent[i]);
+			    		var args = {'id': parseInt(rigsToRent[i].id), 'length': config.rental_length_hrs, 'profileid': config.profileid};
+			    		console.log(args);
+			    		MRRAPI.rentRig(args, function(error, response){
+						    if (error){
+						        console.log('Error: ' + error);
+						        return;
+						    }
+						    console.log('Response: ' + response);
+						});
+			    	}
+			    }
+			});
 	  	} else {
 	  		console.log('Error! ' + error);
 	  		console.log(response);
@@ -194,5 +221,5 @@ function rentMiners(){
 updateEnpointData();
 
 app.listen(3000, function () {
-	console.log('Example app listening on port 3000!');
+	console.log('autominer-api listening on port 3000!');
 });
