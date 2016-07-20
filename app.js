@@ -12,11 +12,10 @@ var db = new sqlite3.Database(dbfile);
 db.serialize(function() {
 	if(!exists) {
 		// Create the logs table
-		db.run("CREATE TABLE logs (id INTEGER PRIMARY KEY NOT NULL, timestamp INTEGER NOT NULL, type VARCHAR NOT NULL, message VARCHAR NOT NULL, extrainfo VARCHAR);");
+		db.run("CREATE TABLE log (id INTEGER PRIMARY KEY NOT NULL, timestamp INTEGER NOT NULL, type VARCHAR NOT NULL, message VARCHAR NOT NULL, extrainfo VARCHAR);");
+		db.run("CREATE TABLE balance (id INTEGER PRIMARY KEY NOT NULL, timestamp INTEGER NOT NULL, type VARCHAR NOT NULL, amount INTEGER NOT NULL, extrainfo VARCHAR);");
 	}
 });
-
-db.close();
 
 // Set the default calculations
 var calculations = {
@@ -213,7 +212,7 @@ function rentMiners(){
 					console.log(response);
 					var balance = JSON.parse(response)['data']['confirmed'];
 					log('info', 'Current balance is: ' + balance, response);
-					console.log(balance);
+					log('curbal', balance, '', 'balance');
 					if (parseFloat(balance) > totalCost){
 						for (var i = 0; i < rigsToRent.length; i++) {
 							console.log(rigsToRent[i]);
@@ -225,6 +224,7 @@ function rentMiners(){
 								}
 								response = JSON.parse(response);
 								log('rental', 'Successfully rented rig: "' + response.data.rigid + '" for ' + response.data.price + ' BTC', JSON.stringify(response));
+								log('spend', response.data.price, JSON.stringify(response), 'balance');
 							});
 						}
 					} else {
@@ -237,17 +237,25 @@ function rentMiners(){
 	  	}
 	})
 }
-function log(type, message, extrainfo){
+var busy = false;
+function log(type, message, extrainfo, table){
 	if (!extrainfo)
 		extrainfo = '';
 
-	db = new sqlite3.Database(dbfile);
+	if (!table)
+		table = 'log';
+
+	if (table == 'log')
+		var cols = '(timestamp, type, message, extrainfo)';
+	else if (table == 'balance')
+		var cols = '(timestamp, type, amount, extrainfo)'
+
 	// Store log in database
 	db.serialize(function() {
-		db.run("INSERT INTO logs (timestamp, type, message, extrainfo) VALUES (" + parseInt(Date.now() / 1000) + ",'" + type + "', '" + message + "', '" + extrainfo + "');");
+		db.run("INSERT INTO " + table + " " + cols + " VALUES (" + parseInt(Date.now() / 1000) + ",'" + type + "', '" + message + "', '" + extrainfo + "');");
 	});
-	db.close();
 }
+
 function throwError(message, extraInfo){
 	if (!extrainfo)
 		extrainfo = '';
