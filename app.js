@@ -1,13 +1,28 @@
 var express = require('express');
 var request = require('request');
 var MiningRigRentalsAPI = require('miningrigrentals-api');
+var sqlite3 = require('sqlite3').verbose();
 var app = express();
+
+var fs = require("fs");
+var dbfile = "autominer.db";
+var exists = fs.existsSync(dbfile);
+var db = new sqlite3.Database(dbfile);
+
+db.serialize(function() {
+	if(!exists) {
+		// Create the logs table
+		db.run("CREATE TABLE logs (id INTEGER PRIMARY KEY NOT NULL, timestamp INTEGER NOT NULL, type VARCHAR NOT NULL, message VARCHAR NOT NULL, extrainfo VARCHAR);");
+	}
+});
+
+db.close();
 
 // Set the default calculations
 var calculations = {
 	'pool_max_margin': 20,
 	'pool_hashrate': 0,
-	'fbd_networkhashps': 0,		
+	'fbd_networkhashps': 0,
 	'MiningRigRentals_last10': 0,
 	'fmd_weighted_btc': 0,
 	'fmd_weighted_usd': 0,
@@ -19,7 +34,7 @@ var calculations = {
 	'market_conditions': 0,
 	'market_conditions_code': -1,
 	'market_conditions_multiplier': -1,
-	'pool_margin': 0,				   
+	'pool_margin': 0,
 	'offer_btc': 0
 }
 
@@ -53,16 +68,20 @@ function updateEnpointData(){
 	var miningRigs = false;
 	var libraryd = false;
 
+	db = new sqlite3.Database(dbfile);
+	db.serialize(function() {
+		db.run("INSERT INTO logs (timestamp, type, message) VALUES (" + (Date.now() / 1000) + ",'info','Updating Endpoint Data');")
+	});
+	db.close();
+
 	request('http://pool.alexandria.media/api/stats', function (error, response, body) {
 	  	if (!error && response.statusCode == 200) {
 			calculations['pool_hashrate'] = JSON.parse(body)['pools']['florincoin']['hashrate'];
 			alexandriaPool = true;
 			if (alexandriaPool && florincoinInfo && miningRigs && libraryd)
-				updateCalculations();
+				doneUpdatingEndpoints();
 	  	} else {
-	  		console.log('Error! ' + error);
-	  		console.log(response);
-	  		console.log(body);
+	  		throwError('Error getting data from http://pool.alexandria.media/api/stats', error + '\n' + response + '\n' + body);
 	  	}
 	})
 
@@ -71,11 +90,9 @@ function updateEnpointData(){
 			calculations['fbd_networkhashps'] = JSON.parse(body)['networkhashps'];
 			florincoinInfo = true;
 			if (alexandriaPool && florincoinInfo && miningRigs && libraryd)
-				updateCalculations();
+				doneUpdatingEndpoints();
 	  	} else {
-	  		console.log('Error! ' + error);
-	  		console.log(response);
-	  		console.log(body);
+	  		throwError('Error getting data from http://florincoin.alexandria.io/getMiningInfo', error + '\n' + response + '\n' + body);
 	  	}
 	})
 
@@ -84,11 +101,9 @@ function updateEnpointData(){
 			calculations['MiningRigRentals_last10'] = parseFloat(JSON.parse(body)['data']['info']['price']['last_10']);
 			miningRigs = true;
 			if (alexandriaPool && florincoinInfo && miningRigs && libraryd)
-				updateCalculations();
+				doneUpdatingEndpoints();
 	  	} else {
-	  		console.log('Error! ' + error);
-	  		console.log(response);
-	  		console.log(body);
+	  		throwError('Error getting data from https://www.miningrigrentals.com/api/v1/rigs?method=list&type=scrypt', error + '\n' + response + '\n' + body);
 	  	}
 	})
 
@@ -98,13 +113,17 @@ function updateEnpointData(){
 			calculations['fmd_weighted_usd'] = parseFloat(JSON.parse(body)['USD']);
 			libraryd = true;
 			if (alexandriaPool && florincoinInfo && miningRigs && libraryd)
-				updateCalculations();
+				doneUpdatingEndpoints();
 	  	} else {
-	  		console.log('Error! ' + error);
-	  		console.log(response);
-	  		console.log(body);
+	  		throwError('Error getting data from https://api.alexandria.io/flo-market-data/v1/getAll', error + '\n' + response + '\n' + body);
 	  	}
 	})
+}
+
+function doneUpdatingEndpoints(){
+	log('info', 'Finished updating endpoint data, updating calculations!');
+
+	updateCalculations();
 }
 
 function updateCalculations(){
@@ -144,6 +163,7 @@ function rentMiners(){
 	// First search for rentals that are below the average price.
 	request('https://www.miningrigrentals.com/api/v1/rigs?method=list&type=scrypt', function (error, response, body) {
 	  	if (!error && response.statusCode == 200) {
+	  		log('info', 'Successfully got rig list');
 	  		var rigs = JSON.parse(body)['data']['records'];
 	  		var goodRigs = [];
 	  		var rigsToRent = [];
@@ -190,11 +210,13 @@ function rentMiners(){
 			if (rigsToRent.length != 0){
 				MRRAPI.getBalance(function(error, response){
 					if (error){
-						console.log(error);
+						throwError('Error getting balance from MiningRigRentals!', error);
 						return;
 					}
+
 					console.log(response);
 					var balance = JSON.parse(response)['data']['confirmed'];
+					log('info', 'Current balance is: ' + balance, response);
 					console.log(balance);
 					if (parseFloat(balance) > totalCost){
 						for (var i = 0; i < rigsToRent.length; i++) {
@@ -203,23 +225,44 @@ function rentMiners(){
 							console.log(args);
 							MRRAPI.rentRig(args, function(error, response){
 								if (error){
-									console.log(error);
+									throwError('Error renting rig!', error + '\n' + response);
 								}
-								console.log('Response: ' + response);
+								response = JSON.parse(response);
+								log('rental', 'Successfully rented rig: "' + response.data.rigid + '" for ' + response.data.price + ' BTC', JSON.stringify(response));
 							});
 						}
+					} else {
+						throwError('Not enough balance in wallet to rent miners!');
 					}
 				});
 			}
 	  	} else {
-	  		console.log('Error! ' + error);
-	  		console.log(response);
-	  		console.log(body);
+	  		throwError('Error getting rig list from MiningRigRentals!', error + '\n' + response + '\n' + body);
 	  	}
 	})
 }
+function log(type, message, extrainfo){
+	if (!extrainfo)
+		extrainfo = '';
 
-updateEnpointData();
+	db = new sqlite3.Database(dbfile);
+	// Store log in database
+	db.serialize(function() {
+		db.run("INSERT INTO logs (timestamp, type, message, extrainfo) VALUES (" + parseInt(Date.now() / 1000) + ",'" + type + "', '" + message + "', '" + extrainfo + "');");
+	});
+	db.close();
+}
+function throwError(message, extraInfo){
+	if (!extrainfo)
+		extrainfo = '';
+
+	log('error', message, extrainfo);
+
+	console.log(message);
+	console.log(extraInfo);
+}
+
+setTimeout(updateEnpointData, 1000);
 
 app.listen(3000, function () {
 	console.log('autominer-api listening on port 3000!');
