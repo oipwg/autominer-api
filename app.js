@@ -68,11 +68,7 @@ function updateEnpointData(){
 	var miningRigs = false;
 	var libraryd = false;
 
-	db = new sqlite3.Database(dbfile);
-	db.serialize(function() {
-		db.run("INSERT INTO logs (timestamp, type, message) VALUES (" + (Date.now() / 1000) + ",'info','Updating Endpoint Data');")
-	});
-	db.close();
+	log('info', 'Updating Endpoint Data');
 
 	request('http://pool.alexandria.media/api/stats', function (error, response, body) {
 	  	if (!error && response.statusCode == 200) {
