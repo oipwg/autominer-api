@@ -65,6 +65,22 @@ app.post('/config', function (req, res) {
 		res.send('{"success":false,"message":"Incorrect API Key"}');
 });
 
+app.post('/logs', function (req, res) {
+	if (req.body.api_key && req.body['api_key'] == settings['api_key'])
+		if(req.body.amount){
+			getLogs(req.body.amount, function(err, logs){
+				res.send(logs);
+			})
+		} else {
+			// Default to returning the last 50 logs
+			getLogs(50, function(err, logs){
+				res.send(logs);
+			})
+		}
+	else
+		res.send('{"success":false,"message":"Incorrect API Key"}');
+});
+
 function updateEnpointData(){
 	// Request data async from each endpoint. When all four have been queried then update the calculations.
 	var alexandriaPool = false;
@@ -307,6 +323,26 @@ function copyFile(source, target) {
 	} catch (e) {
 		throwError('Error creating default settings file from settings.example.cfg', e);
 	}
+}
+
+function getLogs(amount, callback){
+	var logs = {"amount": amount, "logs": []} ;
+	if (amount == -1)
+		amount = ';';
+	else
+		amount = ' LIMIT ' + amount + ';';
+
+	var amntTmp = 0;
+	db.parallelize(function() {
+		db.all("SELECT id, timestamp, type, message, extrainfo FROM log ORDER BY id DESC, type DESC" + amount, function(err, rows) {
+			if (err){
+				console.log(err);
+			}
+			logs.logs = rows;
+			logs.amount = rows.length;
+			callback(err, logs);
+		});
+	});
 }
 
 loadConfig();

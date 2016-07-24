@@ -59,6 +59,27 @@ Automatically rent miners based on the current cost to mine the currency. You sh
 	'MRR_API_secret': '4574a1s6d84654as86d4fga8447d8s4ad8a4gf8a4s56'
 }
 ```
+`/logs`: Requires the post of an API key in order to get logs, you can post a variable called 'amount' to specify how many logs you want. Default amount to return is 50 unless specified, -1 will return all. Responds with logs like this:
+```javascript
+{
+  "amount": 2,
+  "logs": [{
+      "id": 2,
+      "timestamp": 1469389445,
+      "type": "info",
+      "message": "Started up autominer-api on port 3000",
+      "extrainfo": ""
+    },
+    {
+      "id": 1,
+      "timestamp": 1469389445,
+      "type": "error",
+      "message": "Error creating default settings file from settings.example.cfg",
+      "extrainfo": "error"
+    }
+  ]
+}
+```
 
 ### Example Config Change
 Change the config by posting to the config url:
