@@ -2,10 +2,14 @@ var express = require('express');
 var request = require('request');
 var MiningRigRentalsAPI = require('miningrigrentals-api');
 var sqlite3 = require('sqlite3').verbose();
+var fs = require('fs');
 var app = express();
+var bodyParser = require('body-parser');
+app.use(bodyParser.json()); // support json encoded bodies
+app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
 
 var fs = require("fs");
-var dbfile = "autominer.db";
+var dbfile = __dirname + '/autominer.db';
 var exists = fs.existsSync(dbfile);
 var db = new sqlite3.Database(dbfile);
 
@@ -37,16 +41,10 @@ var calculations = {
 	'offer_btc': 0
 }
 
-var config = {
-	'weekly_budget_btc': 0.01,
-	'min_margin': 0,
-	'RPI_threshold': 80,
-	'rental_length_hrs': 6,
-	'api_key': 'password',
-}
+var settings;
 
 app.get('/', function (req, res) {
-  	res.send('');
+		res.send('');
 });
 
 app.get('/info', function (req, res) {
@@ -56,8 +54,15 @@ app.get('/info', function (req, res) {
 	pretty['flo_spotcost_usd'] = parseFloat(pretty['flo_spotcost_usd'].toFixed(8));
 	pretty['market_conditions'] = parseFloat(pretty['market_conditions'].toFixed(8));
 	pretty['offer_btc'] = parseFloat(pretty['offer_btc'].toFixed(8));
-  	res.send(pretty);
-  	rentMiners();
+		res.send(pretty);
+		rentMiners();
+});
+
+app.post('/config', function (req, res) {
+	if (req.body.api_key && req.body['api_key'] == settings['api_key'])
+		res.send(settings);
+	else
+		res.send('{"success":false,"message":"Incorrect API Key"}');
 });
 
 function updateEnpointData(){
@@ -70,48 +75,48 @@ function updateEnpointData(){
 	log('info', 'Updating Endpoint Data');
 
 	request('http://pool.alexandria.media/api/stats', function (error, response, body) {
-	  	if (!error && response.statusCode == 200) {
+			if (!error && response.statusCode == 200) {
 			calculations['pool_hashrate'] = JSON.parse(body)['pools']['florincoin']['hashrate'];
 			alexandriaPool = true;
 			if (alexandriaPool && florincoinInfo && miningRigs && libraryd)
 				doneUpdatingEndpoints();
-	  	} else {
-	  		throwError('Error getting data from http://pool.alexandria.media/api/stats', error + '\n' + response + '\n' + body);
-	  	}
+			} else {
+				throwError('Error getting data from http://pool.alexandria.media/api/stats', error + '\n' + response + '\n' + body);
+			}
 	})
 
 	request('http://florincoin.alexandria.io/getMiningInfo', function (error, response, body) {
-	  	if (!error && response.statusCode == 200) {
+			if (!error && response.statusCode == 200) {
 			calculations['fbd_networkhashps'] = JSON.parse(body)['networkhashps'];
 			florincoinInfo = true;
 			if (alexandriaPool && florincoinInfo && miningRigs && libraryd)
 				doneUpdatingEndpoints();
-	  	} else {
-	  		throwError('Error getting data from http://florincoin.alexandria.io/getMiningInfo', error + '\n' + response + '\n' + body);
-	  	}
+			} else {
+				throwError('Error getting data from http://florincoin.alexandria.io/getMiningInfo', error + '\n' + response + '\n' + body);
+			}
 	})
 
 	request('https://www.miningrigrentals.com/api/v1/rigs?method=list&type=scrypt', function (error, response, body) {
-	  	if (!error && response.statusCode == 200) {
+			if (!error && response.statusCode == 200) {
 			calculations['MiningRigRentals_last10'] = parseFloat(JSON.parse(body)['data']['info']['price']['last_10']);
 			miningRigs = true;
 			if (alexandriaPool && florincoinInfo && miningRigs && libraryd)
 				doneUpdatingEndpoints();
-	  	} else {
-	  		throwError('Error getting data from https://www.miningrigrentals.com/api/v1/rigs?method=list&type=scrypt', error + '\n' + response + '\n' + body);
-	  	}
+			} else {
+				throwError('Error getting data from https://www.miningrigrentals.com/api/v1/rigs?method=list&type=scrypt', error + '\n' + response + '\n' + body);
+			}
 	})
 
 	request('https://api.alexandria.io/flo-market-data/v1/getAll', function (error, response, body) {
-	  	if (!error && response.statusCode == 200) {
+			if (!error && response.statusCode == 200) {
 			calculations['fmd_weighted_btc'] = parseFloat(JSON.parse(body)['weighted']);
 			calculations['fmd_weighted_usd'] = parseFloat(JSON.parse(body)['USD']);
 			libraryd = true;
 			if (alexandriaPool && florincoinInfo && miningRigs && libraryd)
 				doneUpdatingEndpoints();
-	  	} else {
-	  		throwError('Error getting data from https://api.alexandria.io/flo-market-data/v1/getAll', error + '\n' + response + '\n' + body);
-	  	}
+			} else {
+				throwError('Error getting data from https://api.alexandria.io/flo-market-data/v1/getAll', error + '\n' + response + '\n' + body);
+			}
 	})
 }
 
@@ -157,16 +162,16 @@ function updateCalculations(){
 function rentMiners(){
 	// First search for rentals that are below the average price.
 	request('https://www.miningrigrentals.com/api/v1/rigs?method=list&type=scrypt', function (error, response, body) {
-	  	if (!error && response.statusCode == 200) {
-	  		log('info', 'Successfully got rig list');
-	  		var rigs = JSON.parse(body)['data']['records'];
-	  		var goodRigs = [];
-	  		var rigsToRent = [];
-	  		// Add the rigs to the good rigs if they are available for at least a week and are below the average price.
-	  		for (var i = 0; i < rigs.length; i++) {
-	  			if (rigs[i]['minhrs'] <= config.rental_length_hrs && rigs[i]['maxhrs'] >= config.rental_length_hrs)
-	  				goodRigs.push(rigs[i]);
-	  		}
+			if (!error && response.statusCode == 200) {
+				log('info', 'Successfully got rig list');
+				var rigs = JSON.parse(body)['data']['records'];
+				var goodRigs = [];
+				var rigsToRent = [];
+				// Add the rigs to the good rigs if they are available for at least a week and are below the average price.
+				for (var i = 0; i < rigs.length; i++) {
+					if (rigs[i]['minhrs'] <= settings.rental_length_hrs && rigs[i]['maxhrs'] >= settings.rental_length_hrs)
+						goodRigs.push(rigs[i]);
+				}
 			
 			console.log(goodRigs.length);
 			// Sort the rigs by RPI
@@ -177,20 +182,20 @@ function rentMiners(){
 			var totalCost = 0;
 			var totalNewHash = 0;
 			for (var i = 0; i < goodRigs.length; i++) {
-				if (goodRigs[i].rpi >= config['RPI_threshold'] && goodRigs[i]['price'] < calculations['MiningRigRentals_last10'] && (totalCost + parseFloat(goodRigs[i].price_hr)) <= ((config['weekly_budget_btc']/168)*config['rental_length_hrs']) && calculations['pool_margin'] >= config['min_margin']){
+				if (goodRigs[i].rpi >= settings['RPI_threshold'] && goodRigs[i]['price'] < calculations['MiningRigRentals_last10'] && (totalCost + parseFloat(goodRigs[i].price_hr)) <= ((settings['weekly_budget_btc']/168)*settings['rental_length_hrs']) && calculations['pool_margin'] >= settings['min_margin']){
 					rigsToRent.push(goodRigs[i]);
 					totalNewHash += parseFloat(goodRigs[i].hashrate);
-					totalCost += parseFloat(goodRigs[i].price_hr)*config['rental_length_hrs'];
+					totalCost += parseFloat(goodRigs[i].price_hr)*settings['rental_length_hrs'];
 					calculations['pool_hashrate'] = parseInt(calculations['pool_hashrate']) + parseInt(goodRigs.hashrate);
 					goodRigs.splice(i, 1);
 					updateCalculations();
 				}
 			}
 			for (var i = 0; i < goodRigs.length; i++) {
-				if (goodRigs[i].rpi > config['RPI_threshold'] && (totalCost + parseFloat(goodRigs[i].price_hr)) <= ((config['weekly_budget_btc']/168)*config['rental_length_hrs']) && calculations['pool_margin'] >= config['min_margin']){
+				if (goodRigs[i].rpi > settings['RPI_threshold'] && (totalCost + parseFloat(goodRigs[i].price_hr)) <= ((settings['weekly_budget_btc']/168)*settings['rental_length_hrs']) && calculations['pool_margin'] >= settings['min_margin']){
 					rigsToRent.push(goodRigs[i]);
 					totalNewHash += parseFloat(goodRigs[i].hashrate);
-					totalCost += parseFloat(goodRigs[i].price_hr)*config['rental_length_hrs'];
+					totalCost += parseFloat(goodRigs[i].price_hr)*settings['rental_length_hrs'];
 					calculations['pool_hashrate'] = parseInt(calculations['pool_hashrate']) + parseInt(goodRigs.hashrate);
 					updateCalculations();
 				}
@@ -200,7 +205,7 @@ function rentMiners(){
 			console.log("Hashrate to Rent: " + (totalNewHash / 1000000000));
 			console.log("Cost to Rent: " + totalCost);
 
-			var MRRAPI = new MiningRigRentalsAPI(config.MRR_API_key, config.MRR_API_secret);
+			var MRRAPI = new MiningRigRentalsAPI(settings.MRR_API_key, settings.MRR_API_secret);
 
 			if (rigsToRent.length != 0){
 				MRRAPI.getBalance(function(error, response){
@@ -210,13 +215,17 @@ function rentMiners(){
 					}
 
 					console.log(response);
+					if (!JSON.parse(response).success){
+						throwError('Error getting balance, ' + JSON.parse(response).message);
+						return;
+					}
 					var balance = JSON.parse(response)['data']['confirmed'];
 					log('info', 'Current balance is: ' + balance, response);
 					log('curbal', balance, '', 'balance');
 					if (parseFloat(balance) > totalCost){
 						for (var i = 0; i < rigsToRent.length; i++) {
 							console.log(rigsToRent[i]);
-							var args = {'id': parseInt(rigsToRent[i].id), 'length': config.rental_length_hrs, 'profileid': config.profileid};
+							var args = {'id': parseInt(rigsToRent[i].id), 'length': settings.rental_length_hrs, 'profileid': settings.profileid};
 							console.log(args);
 							MRRAPI.rentRig(args, function(error, response){
 								if (error){
@@ -232,9 +241,9 @@ function rentMiners(){
 					}
 				});
 			}
-	  	} else {
-	  		throwError('Error getting rig list from MiningRigRentals!', error + '\n' + response + '\n' + body);
-	  	}
+			} else {
+				throwError('Error getting rig list from MiningRigRentals!', error + '\n' + response + '\n' + body);
+			}
 	})
 }
 var busy = false;
@@ -257,17 +266,56 @@ function log(type, message, extrainfo, table){
 }
 
 function throwError(message, extraInfo){
-	if (!extrainfo)
-		extrainfo = '';
+	if (!extraInfo)
+		extraInfo = '';
 
-	log('error', message, extrainfo);
+	log('error', message, extraInfo, 'log');
 
 	console.log(message);
 	console.log(extraInfo);
 }
 
-setTimeout(updateEnpointData, 1000);
+function loadConfig(){
+	if (!fs.existsSync(__dirname + '/settings.cfg'))
+		copyFile(__dirname + '/settings.example.cfg', __dirname + '/settings.cfg');
+
+	var data = fs.readFileSync(__dirname + '/settings.cfg');
+	try {
+		if (data == ''){
+			copyFile(__dirname + '/settings.example.cfg', __dirname + '/settings.cfg');
+			var data = fs.readFileSync(__dirname + '/settings.cfg');
+		}
+		settings = JSON.parse(data);
+	} catch(e) {
+		throwError('Error loading Config', 'There was an error loading the config, please double check that it is correctly written and valid JSON!\n' + e);
+	}
+}
+
+function writeConfig(settings){
+	try {
+		fs.writeFileSync(__dirname + '/settings.cfg', JSON.stringify(settings, null, 4));
+	} catch (e) {
+		throwError('Error writing config', e);
+	}
+
+}
+
+function copyFile(source, target) {
+	try {
+		var data = fs.readFileSync(source);
+		fs.writeFileSync(target, data);
+	} catch (e) {
+		throwError('Error creating default settings file from settings.example.cfg', e);
+	}
+}
+
+loadConfig();
+// Initially update endpoint data on startup
+//updateEnpointData();
+// 								 minutes * seconds * ms
+//setInterval(updateEnpointData, 60 * 60 * 1000);
 
 app.listen(3000, function () {
 	console.log('autominer-api listening on port 3000!');
+	log('info', 'Started up autominer-api on port 3000');
 });

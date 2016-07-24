@@ -1,5 +1,5 @@
 # Autominer API
-Automatically rent miners based on the current cost to mine the currency.
+Automatically rent miners based on the current cost to mine the currency. You should run the frontend and only make calls from an SSL connection if including the API key. If you do not use an SSL secure connection you will be risking exposing your API keys to anybody who might be sniffing your traffic.
 
 ## API Endpoints:
 `/info`: Responds with JSON that includes the following data:
