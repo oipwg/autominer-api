@@ -59,8 +59,18 @@ app.get('/info', function (req, res) {
 });
 
 app.post('/config', function (req, res) {
-	if (req.body.api_key && req.body['api_key'] == settings['api_key'])
+	if (req.body.api_key && req.body['api_key'] == settings['api_key']){
+		for (var key in req.body){
+			if (key != 'api_key'){
+				if (isNaN(req.body[key]))
+					settings[key] = req.body[key];
+				else
+					settings[key] = parseFloat(req.body[key]);
+			}
+		}
+		saveConfig();
 		res.send(settings);
+	}
 	else
 		res.send('{"success":false,"message":"Incorrect API Key"}');
 });
@@ -307,7 +317,7 @@ function loadConfig(){
 	}
 }
 
-function writeConfig(settings){
+function saveConfig(){
 	try {
 		fs.writeFileSync(__dirname + '/settings.cfg', JSON.stringify(settings, null, 4));
 	} catch (e) {
