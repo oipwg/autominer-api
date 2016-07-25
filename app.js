@@ -403,9 +403,13 @@ function calculateSpendable(callback){
 
 loadConfig();
 // Initially update endpoint data on startup
-//updateEnpointData();
-// 								 minutes * seconds * ms
-//setInterval(updateEnpointData, 60 * 60 * 1000);
+updateEnpointData();
+// 							   minutes * seconds * ms
+var endpoint = setInterval(updateEnpointData, 15 * 60 * 1000);
+
+// After 30 seconds, rent the first batch of rigs, then every x amount of hours after that attempt to rent again.
+setTimeout(rentMiners, 30 * 1000);
+var rentals = setInterval(rentMiners, settings.rental_length_hrs * 60 * 60 * 1000);
 
 app.listen(3000, function () {
 	console.log('autominer-api listening on port 3000!');
