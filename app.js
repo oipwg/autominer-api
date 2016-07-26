@@ -18,6 +18,7 @@ db.serialize(function() {
 		// Create the logs table
 		db.run("CREATE TABLE log (id INTEGER PRIMARY KEY NOT NULL, timestamp INTEGER NOT NULL, type VARCHAR NOT NULL, message VARCHAR NOT NULL, extrainfo VARCHAR);");
 		db.run("CREATE TABLE balance (id INTEGER PRIMARY KEY NOT NULL, timestamp INTEGER NOT NULL, type VARCHAR NOT NULL, amount INTEGER NOT NULL, extrainfo VARCHAR);");
+		db.run("CREATE TABLE rentals (id INTEGER PRIMARY KEY NOT NULL, timestamp INTEGER NOT NULL, type VARCHAR NOT NULL, response INTEGER NOT NULL, extrainfo VARCHAR);");
 	}
 });
 
@@ -54,8 +55,8 @@ app.get('/info', function (req, res) {
 	pretty['flo_spotcost_usd'] = parseFloat(pretty['flo_spotcost_usd'].toFixed(8));
 	pretty['market_conditions'] = parseFloat(pretty['market_conditions'].toFixed(8));
 	pretty['offer_btc'] = parseFloat(pretty['offer_btc'].toFixed(8));
-		res.send(pretty);
-		rentMiners();
+
+	res.send(pretty);
 });
 
 app.post('/config', function (req, res) {
@@ -150,6 +151,16 @@ function updateEnpointData(){
 				throwError('Error getting data from https://api.alexandria.io/flo-market-data/v1/getAll', error + '\n' + response + '\n' + body);
 			}
 	})
+
+	var MRRAPI = new MiningRigRentalsAPI(settings.MRR_API_key, settings.MRR_API_secret);
+	// List the rentals and log that
+	MRRAPI.listMyRentals(function(error, response){
+		if (error){
+			console.log(error);
+			return;
+		}
+		log('status', response, '', 'rentals');
+	});
 }
 
 function doneUpdatingEndpoints(){
@@ -291,7 +302,9 @@ function log(type, message, extrainfo, table){
 	if (table == 'log')
 		var cols = '(timestamp, type, message, extrainfo)';
 	else if (table == 'balance')
-		var cols = '(timestamp, type, amount, extrainfo)'
+		var cols = '(timestamp, type, amount, extrainfo)';
+	else if (table == 'rentals')
+		var cols = '(timestamp, type, response, extrainfo)';
 
 	// Store log in database
 	db.serialize(function() {
@@ -365,7 +378,7 @@ function getLogs(amount, callback){
 
 function calculateSpendable(callback){
 	db.parallelize(function() {
-		db.all("SELECT * FROM balance ORDER BY id DESC, type DESC" + amount, function(err, rows) {
+		db.all("SELECT * FROM balance ORDER BY id DESC, type DESC;", function(err, rows) {
 			if (err){
 				console.log(err);
 			}
@@ -407,8 +420,8 @@ updateEnpointData();
 // 							   minutes * seconds * ms
 var endpoint = setInterval(updateEnpointData, 15 * 60 * 1000);
 
-// After 30 seconds, rent the first batch of rigs, then every x amount of hours after that attempt to rent again.
-setTimeout(rentMiners, 30 * 1000);
+// After 10 seconds, rent the first batch of rigs, then every x amount of hours after that attempt to rent again.
+setTimeout(rentMiners, 10 * 1000);
 var rentals = setInterval(rentMiners, settings.rental_length_hrs * 60 * 60 * 1000);
 
 app.listen(3000, function () {
