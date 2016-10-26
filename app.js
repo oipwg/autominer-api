@@ -107,25 +107,25 @@ function updateEnpointData(){
 
 	log('info', 'Updating Endpoint Data');
 
-	request('http://pool.alexandria.media/api/stats', function (error, response, body) {
+	request('https://api.alexandria.io/pool/api/stats', function (error, response, body) {
 			if (!error && response.statusCode == 200) {
 			calculations['pool_hashrate'] = JSON.parse(body)['pools']['florincoin']['hashrate'];
 			alexandriaPool = true;
 			if (alexandriaPool && florincoinInfo && miningRigs && libraryd)
 				doneUpdatingEndpoints();
 			} else {
-				throwError('Error getting data from http://pool.alexandria.media/api/stats', error + '\n' + response + '\n' + body);
+				throwError('Error getting data from https://api.alexandria.io/pool/api/stats', error + '\n' + response + '\n' + body);
 			}
 	})
 
-	request('http://florincoin.alexandria.io/getMiningInfo', function (error, response, body) {
+	request('https://api.alexandria.io/florincoin/getMiningInfo', function (error, response, body) {
 			if (!error && response.statusCode == 200) {
 			calculations['fbd_networkhashps'] = JSON.parse(body)['networkhashps'];
 			florincoinInfo = true;
 			if (alexandriaPool && florincoinInfo && miningRigs && libraryd)
 				doneUpdatingEndpoints();
 			} else {
-				throwError('Error getting data from http://florincoin.alexandria.io/getMiningInfo', error + '\n' + response + '\n' + body);
+				throwError('Error getting data from https://api.alexandria.io/florincoin/getMiningInfo', error + '\n' + response + '\n' + body);
 			}
 	})
 

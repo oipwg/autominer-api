@@ -3,3 +3,7 @@ node_modules/*
 *.db
 
 settings.cfg
+
+config.cfg
+
+config.dis.cfg
