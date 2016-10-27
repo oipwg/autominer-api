@@ -226,7 +226,7 @@ function rentMiners(){
 			var totalNewHash = 0;
 			var amountToSpend = calculateSpendable(function(spendable){
 				for (var i = 0; i < goodRigs.length; i++) {
-					if (goodRigs[i].rpi >= settings['RPI_threshold'] && goodRigs[i]['price'] < calculations['MiningRigRentals_last10'] && (totalCost + parseFloat(goodRigs[i].price_hr)) <= spendable && calculations['pool_margin'] >= settings['min_margin']){
+					if (goodRigs[i].rpi >= settings['RPI_threshold'] && goodRigs[i]['price'] < calculations['MiningRigRentals_last10'] && (totalCost + (parseFloat(goodRigs[i].price_hr) * settings['rental_length_hrs'])) <= spendable && calculations['pool_margin'] >= settings['min_margin']){
 						rigsToRent.push(goodRigs[i]);
 						totalNewHash += parseFloat(goodRigs[i].hashrate);
 						totalCost += parseFloat(goodRigs[i].price_hr)*settings['rental_length_hrs'];
@@ -236,7 +236,7 @@ function rentMiners(){
 					}
 				}
 				for (var i = 0; i < goodRigs.length; i++) {
-					if (goodRigs[i].rpi > settings['RPI_threshold'] && (totalCost + parseFloat(goodRigs[i].price_hr)) <= spendable && calculations['pool_margin'] >= settings['min_margin']){
+					if (goodRigs[i].rpi > settings['RPI_threshold'] && (totalCost + (parseFloat(goodRigs[i].price_hr) * settings['rental_length_hrs'])) <= spendable && calculations['pool_margin'] >= settings['min_margin']){
 						rigsToRent.push(goodRigs[i]);
 						totalNewHash += parseFloat(goodRigs[i].hashrate);
 						totalCost += parseFloat(goodRigs[i].price_hr)*settings['rental_length_hrs'];
@@ -408,7 +408,9 @@ function calculateSpendable(callback){
 				callback(leftToSpend);
 			} else {
 				// Budget for rental length peroid.
-				callback((settings['weekly_budget_btc'] / 168) * settings['rental_length_hrs']);
+				var budget = (settings['weekly_budget_btc'] / 168) * settings['rental_length_hrs'];
+				console.log("Calculated budget is: " + budget);
+				callback(budget);
 			}
 		});
 	});
@@ -424,7 +426,7 @@ var endpoint = setInterval(updateEnpointData, 15 * 60 * 1000);
 setTimeout(rentMiners, 10 * 1000);
 var rentals = setInterval(rentMiners, settings.rental_length_hrs * 60 * 60 * 1000);
 
-app.listen(3000, function () {
-	console.log('autominer-api listening on port 3000!');
-	log('info', 'Started up autominer-api on port 3000');
+app.listen(3123, function () {
+	console.log('autominer-api listening on port 3123!');
+	log('info', 'Started up autominer-api on port 3123');
 });
