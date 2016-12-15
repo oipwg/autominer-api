@@ -1,6 +1,21 @@
 # Autominer API
 Automatically rent miners based on the current cost to mine the currency. You should run the frontend and only make calls from an SSL connection if including the API key. If you do not use an SSL secure connection you will be risking exposing your API keys to anybody who might be sniffing your traffic.
 
+## Installation
+Install Node.js then run the following commands to download and install the autominer-api.
+```
+$ git clone https://github.com/dloa/autominer-api.git
+$ cd autominer-api
+$ npm install
+```
+
+# Usage
+## Running the Application
+To run the autominer-api application just run the following command and keep it running using something like screen.
+```
+$ node app.js
+```
+
 ## API Endpoints:
 `/info`: Responds with JSON that includes the following data:
 ```javascript
