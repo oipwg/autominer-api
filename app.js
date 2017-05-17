@@ -44,6 +44,26 @@ var calculations = {
 
 var settings;
 
+// Add headers
+app.use(function (req, res, next) {
+
+    // Website you wish to allow to connect
+    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5757');
+
+    // Request methods you wish to allow
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+
+    // Request headers you wish to allow
+    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+
+    // Set to true if you need the website to include cookies in the requests sent
+    // to the API (e.g. in case you use sessions)
+    res.setHeader('Access-Control-Allow-Credentials', true);
+
+    // Pass to next layer of middleware
+    next();
+});
+
 app.get('/', function (req, res) {
 		res.send('');
 });
@@ -94,8 +114,28 @@ app.post('/logs', function (req, res) {
 				res.send(logs);
 			})
 		}
-	else
+	else{
+		console.log(req.body);
 		res.send('{"success":false,"message":"Incorrect API Key"}');
+	}
+});
+
+app.post('/rentals', function (req, res) {
+	if (req.body.api_key && req.body['api_key'] == settings['api_key'])
+		if(req.body.amount){
+			getRentals(req.body.amount, function(err, logs){
+				res.send(logs);
+			})
+		} else {
+			// Default to returning the last 50 logs
+			getRentals(50, function(err, logs){
+				res.send(logs);
+			})
+		}
+	else{
+		console.log(req.body);
+		res.send('{"success":false,"message":"Incorrect API Key"}');
+	}
 });
 
 function updateEnpointData(){
@@ -120,10 +160,10 @@ function updateEnpointData(){
 
 	request('https://api.alexandria.io/florincoin/getMiningInfo', function (error, response, body) {
 			if (!error && response.statusCode == 200) {
-			calculations['fbd_networkhashps'] = JSON.parse(body)['networkhashps'];
-			florincoinInfo = true;
-			if (alexandriaPool && florincoinInfo && miningRigs && libraryd)
-				doneUpdatingEndpoints();
+				calculations['fbd_networkhashps'] = JSON.parse(body)['networkhashps'];
+				florincoinInfo = true;
+				if (alexandriaPool && florincoinInfo && miningRigs && libraryd)
+					doneUpdatingEndpoints();
 			} else {
 				throwError('Error getting data from https://api.alexandria.io/florincoin/getMiningInfo', error + '\n' + response + '\n' + body);
 			}
@@ -131,10 +171,10 @@ function updateEnpointData(){
 
 	request('https://www.miningrigrentals.com/api/v1/rigs?method=list&type=scrypt', function (error, response, body) {
 			if (!error && response.statusCode == 200) {
-			calculations['MiningRigRentals_last10'] = parseFloat(JSON.parse(body)['data']['info']['price']['last_10']);
-			miningRigs = true;
-			if (alexandriaPool && florincoinInfo && miningRigs && libraryd)
-				doneUpdatingEndpoints();
+				calculations['MiningRigRentals_last10'] = parseFloat(JSON.parse(body)['data']['info']['price']['last_10']);
+				miningRigs = true;
+				if (alexandriaPool && florincoinInfo && miningRigs && libraryd)
+					doneUpdatingEndpoints();
 			} else {
 				throwError('Error getting data from https://www.miningrigrentals.com/api/v1/rigs?method=list&type=scrypt', error + '\n' + response + '\n' + body);
 			}
@@ -292,12 +332,15 @@ function rentMiners(){
 	});
 }
 
-function log(type, message, extrainfo, table){
+function log(type, message, extrainfo, table, callback){
 	if (!extrainfo)
 		extrainfo = '';
 
 	if (!table)
 		table = 'log';
+
+	if (!callback)
+		callback = function(data){}
 
 	if (table == 'log')
 		var cols = '(timestamp, type, message, extrainfo)';
@@ -308,7 +351,9 @@ function log(type, message, extrainfo, table){
 
 	// Store log in database
 	db.serialize(function() {
-		db.run("INSERT INTO " + table + " " + cols + " VALUES (" + parseInt(Date.now() / 1000) + ",'" + type + "', '" + message + "', '" + extrainfo + "');");
+		db.run("INSERT INTO " + table + " " + cols + " VALUES (" + parseInt(Date.now() / 1000) + ",'" + type + "', '" + message + "', '" + extrainfo + "');", function(){
+			callback();
+		});
 	});
 }
 
@@ -365,7 +410,27 @@ function getLogs(amount, callback){
 
 	var amntTmp = 0;
 	db.parallelize(function() {
-		db.all("SELECT id, timestamp, type, message, extrainfo FROM log ORDER BY id DESC, type DESC" + amount, function(err, rows) {
+		db.all("SELECT id, timestamp, type, message, extrainfo FROM log ORDER BY timestamp DESC, type DESC" + amount, function(err, rows) {
+			if (err){
+				console.log(err);
+			}
+			logs.logs = rows;
+			logs.amount = rows.length;
+			callback(err, logs);
+		});
+	});
+}
+
+function getRentals(amount, callback){
+	var logs = {"amount": amount, "logs": []} ;
+	if (amount == -1)
+		amount = ';';
+	else
+		amount = ' LIMIT ' + amount + ';';
+
+	var amntTmp = 0;
+	db.parallelize(function() {
+		db.all("SELECT id, timestamp, type, response, extrainfo FROM rentals ORDER BY timestamp DESC, type DESC" + amount, function(err, rows) {
 			if (err){
 				console.log(err);
 			}
@@ -416,6 +481,11 @@ function calculateSpendable(callback){
 	});
 }
 
+app.listen(3123, function () {
+	console.log('autominer-api listening on port 3123!');
+	log('info', 'Started up autominer-api on port 3123');
+});
+
 loadConfig();
 // Initially update endpoint data on startup
 updateEnpointData();
@@ -426,7 +496,20 @@ var endpoint = setInterval(updateEnpointData, 15 * 60 * 1000);
 setTimeout(rentMiners, 10 * 1000);
 var rentals = setInterval(rentMiners, settings.rental_length_hrs * 60 * 60 * 1000);
 
-app.listen(3123, function () {
-	console.log('autominer-api listening on port 3123!');
-	log('info', 'Started up autominer-api on port 3123');
-});
+process.stdin.resume();//so the program will not close instantly
+
+function exitHandler(options, err) {
+	log('error', 'autominer-api Shut Down', '', 'log', function(){
+	    if (err) console.log(err.stack);
+	    if (options.exit) process.exit();
+	});
+}
+
+//do something when app is closing
+process.on('exit', exitHandler.bind(null,{cleanup:true}));
+
+//catches ctrl+c event
+process.on('SIGINT', exitHandler.bind(null, {exit:true}));
+
+//catches uncaught exceptions
+process.on('uncaughtException', exitHandler.bind(null, {exit:true}));
