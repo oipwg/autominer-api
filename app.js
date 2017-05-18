@@ -48,7 +48,7 @@ var settings;
 app.use(function (req, res, next) {
 
     // Website you wish to allow to connect
-    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5757');
+    res.setHeader('Access-Control-Allow-Origin', '*');
 
     // Request methods you wish to allow
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
@@ -96,7 +96,10 @@ app.post('/config', function (req, res) {
 			}
 		}
 		saveConfig();
-		res.send(settings);
+
+		var tmpSets = JSON.parse(JSON.stringify(settings));
+		delete tmpSets.api_key;
+		res.send(tmpSets);
 	}
 	else
 		res.send('{"success":false,"message":"Incorrect API Key"}');
@@ -201,6 +204,15 @@ function updateEnpointData(){
 		}
 		log('status', response, '', 'rentals');
 	});
+
+	MRRAPI.listProfiles(function(error, response){
+		if (error){
+			console.log(error);
+			return;
+		}
+		// Just write to the settings, don't log it anywhere.
+		settings.profiles = JSON.parse(response).data;
+	})
 }
 
 function doneUpdatingEndpoints(){
