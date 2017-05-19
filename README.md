@@ -9,6 +9,34 @@ $ cd autominer-api
 $ npm install
 ```
 
+Next, you will need to get your API credentials from Mining Rig Rentals. In order to do this, you will need to follow the following steps.
+1. Login to your Mining Rig Rentals account.
+2. Navigate to the URL https://www.miningrigrentals.com/account/apikey
+3. Press the "Add A Key" button. Make sure to give it permission to Withdraw, Rent Rigs, and Manage Rigs (for some reason the MRR API will not rent machines unless all three permissions are granted). After giving it the correct permissions, press the "Save" button.
+
+Now that we have the API credentials, we can go ahead and start up the API and enter in our config details using the following command:
+```
+$ node app.js
+```
+Once you have started the application, it will walk you through a similar dialog to this:
+```
+$ node app.js
+Welcome to the Alexandria Autominer!
+
+It looks like you have not yet setup the Autominer yet, please follow the directions found here: bit.ly/asdfg
+
+
+Please enter your MiningRigRentals API Key: d448a54df68a8sd8f48as4d8f7e6ad48745ds52a1f234
+Please enter your MiningRigRentals API Secret: 4574a1s6d84654as86d4fga8447d8s4ad8a4gf8a4s56
+ ======== PROFILES ======== 
+ID: 12345 | Name: Profile 1
+ID: 23451 | Name: Profile 2
+ID: 34512 | Name: Profile 3
+ ========================== 
+Please enter a PROFILE ID from the list above: 12345
+autominer-api listening on port 3123!
+```
+
 # Usage
 ## Running the Application
 To run the autominer-api application just run the following command and keep it running using something like screen.

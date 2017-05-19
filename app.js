@@ -3,6 +3,7 @@ var request = require('request');
 var MiningRigRentalsAPI = require('miningrigrentals-api');
 var sqlite3 = require('sqlite3').verbose();
 var fs = require('fs');
+var readlineSync = require('readline-sync');
 var app = express();
 var bodyParser = require('body-parser');
 app.use(bodyParser.json()); // support json encoded bodies
@@ -379,7 +380,7 @@ function throwError(message, extraInfo){
 	console.log(extraInfo);
 }
 
-function loadConfig(){
+function loadConfig(callback){
 	if (!fs.existsSync(__dirname + '/settings.cfg'))
 		copyFile(__dirname + '/settings.example.cfg', __dirname + '/settings.cfg');
 
@@ -390,6 +391,55 @@ function loadConfig(){
 			var data = fs.readFileSync(__dirname + '/settings.cfg');
 		}
 		settings = JSON.parse(data);
+
+		if (settings.MRR_API_key == "sample-api-key" || settings.MRR_API_secret == "sample-api-secret" || settings.profileid == -1){
+			console.log("Welcome to the Alexandria Autominer!\n")
+			console.log("It looks like you have not yet setup the Autominer yet, please follow the directions found here: bit.ly/asdfg\n\n");
+		
+			if (settings.MRR_API_key == "sample-api-key"){
+				var api_key = readlineSync.question('Please enter your MiningRigRentals API Key: ');
+				settings.MRR_API_key = api_key;
+
+				saveConfig();
+			}
+
+			if (settings.MRR_API_secret == "sample-api-secret"){
+				var api_secret = readlineSync.question('Please enter your MiningRigRentals API Secret: ');
+				settings.MRR_API_secret = api_secret;
+
+				saveConfig();
+			}
+
+			if (settings.profileid == -1){
+				var MRRAPI = new MiningRigRentalsAPI(settings.MRR_API_key, settings.MRR_API_secret);
+
+				MRRAPI.listProfiles(function(error, response){
+					if (error){
+						console.log(error);
+						return;
+					}
+					// Just write to the settings, don't log it anywhere.
+					settings.profiles = JSON.parse(response).data;
+
+					console.log(" ======== PROFILES ======== ");
+					for (var i = settings.profiles.length - 1; i >= 0; i--) {
+						console.log("ID: " + settings.profiles[i].id + " | " + "Name: " + settings.profiles[i].name);
+					}
+					console.log(" ========================== ");
+
+					var profileid = readlineSync.question('Please enter a PROFILE ID from the list above: ');
+					settings.profileid = profileid;
+
+					saveConfig();
+
+					callback(settings);
+				})
+			} else {
+				callback(settings);
+			}
+		} else {
+			callback(settings);
+		}
 	} catch(e) {
 		throwError('Error loading Config', 'There was an error loading the config, please double check that it is correctly written and valid JSON!\n' + e);
 	}
@@ -493,20 +543,21 @@ function calculateSpendable(callback){
 	});
 }
 
-app.listen(3123, function () {
-	console.log('autominer-api listening on port 3123!');
-	log('info', 'Started up autominer-api on port 3123');
+loadConfig(function(){
+	var port = 3123;
+	app.listen(port, function () {
+		console.log('autominer-api listening on port ' + port + '!');
+		log('info', 'Started up autominer-api on port ' + port);
+	});
+	// Initially update endpoint data on startup
+	updateEnpointData();
+	// 							   minutes * seconds * ms
+	var endpoint = setInterval(updateEnpointData, 15 * 60 * 1000);
+
+	// After 10 seconds, rent the first batch of rigs, then every x amount of hours after that attempt to rent again.
+	setTimeout(rentMiners, 10 * 1000);
+	var rentals = setInterval(rentMiners, settings.rental_length_hrs * 60 * 60 * 1000);
 });
-
-loadConfig();
-// Initially update endpoint data on startup
-updateEnpointData();
-// 							   minutes * seconds * ms
-var endpoint = setInterval(updateEnpointData, 15 * 60 * 1000);
-
-// After 10 seconds, rent the first batch of rigs, then every x amount of hours after that attempt to rent again.
-setTimeout(rentMiners, 10 * 1000);
-var rentals = setInterval(rentMiners, settings.rental_length_hrs * 60 * 60 * 1000);
 
 process.stdin.resume();//so the program will not close instantly
 
