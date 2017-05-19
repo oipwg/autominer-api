@@ -394,7 +394,7 @@ function loadConfig(callback){
 
 		if (settings.MRR_API_key == "sample-api-key" || settings.MRR_API_secret == "sample-api-secret" || settings.profileid == -1){
 			console.log("Welcome to the Alexandria Autominer!\n")
-			console.log("It looks like you have not yet setup the Autominer yet, please follow the directions found here: bit.ly/asdfg\n\n");
+			console.log("It looks like you have not yet setup the Autominer yet, please follow the directions found here: bit.ly/2rAVVVi\n\n");
 		
 			if (settings.MRR_API_key == "sample-api-key"){
 				var api_key = readlineSync.question('Please enter your MiningRigRentals API Key: ');

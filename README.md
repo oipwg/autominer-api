@@ -23,7 +23,7 @@ Once you have started the application, it will walk you through a similar dialog
 $ node app.js
 Welcome to the Alexandria Autominer!
 
-It looks like you have not yet setup the Autominer yet, please follow the directions found here: bit.ly/asdfg
+It looks like you have not yet setup the Autominer yet, please follow the directions found here: bit.ly/2rAVVVi
 
 
 Please enter your MiningRigRentals API Key: d448a54df68a8sd8f48as4d8f7e6ad48745ds52a1f234
