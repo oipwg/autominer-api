@@ -10,7 +10,7 @@ $ npm install
 ```
 
 Next, you will need to get your API credentials from Mining Rig Rentals. In order to do this, you will need to follow the following steps.
-1. Login to your Mining Rig Rentals account.
+1. Login to your Mining Rig Rentals account. (If you have not yet created an account, you can follow the instructions on how to fully get your MRR account ready below.)
 2. Navigate to the URL https://www.miningrigrentals.com/account/apikey
 3. Press the "Add A Key" button. Make sure to give it permission to Withdraw, Rent Rigs, and Manage Rigs (for some reason the MRR API will not rent machines unless all three permissions are granted). After giving it the correct permissions, press the "Save" button.
 
@@ -28,6 +28,12 @@ It looks like you have not yet setup the Autominer yet, please follow the direct
 
 Please enter your MiningRigRentals API Key: d448a54df68a8sd8f48as4d8f7e6ad48745ds52a1f234
 Please enter your MiningRigRentals API Secret: 4574a1s6d84654as86d4fga8447d8s4ad8a4gf8a4s56
+How much BTC would you like to spend each week?: 0.001
+The "minimum margin" is the threashold at which it will begin mining. If this is set to 0, then it will always rent, however if you set it to anything higher, it will wait until the margin is met to begin mining.
+Please enter your "minimum margin": 0
+The RPI threashold is the minimum machine avaialbilty that will be accepted. An RPI threashold of 80 is standard.
+Please enter your RPI threashold: 80
+Please enter a password for this API: example-password
  ======== PROFILES ======== 
 ID: 12345 | Name: Profile 1
 ID: 23451 | Name: Profile 2
@@ -36,6 +42,20 @@ ID: 34512 | Name: Profile 3
 Please enter a PROFILE ID from the list above: 12345
 autominer-api listening on port 3123!
 ```
+
+## Mining Rig Rentals Account Setup
+1. Create a Mining Rig Rentals account at: https://www.miningrigrentals.com/register
+2. Deposit some starting funds to your MRR account (this will allow you to start mining sooner!)
+3. Browse to the [MRR pools page](https://www.miningrigrentals.com/account/pools) and select "Add A Pool"
+4. Enter in the details for your pool. If you would like to mine on the Alexandria pool, just enter the following details:
+![](http://skylarostler.com/img/pG4kseCUx7.png)
+5. Browse to the [MRR profiles page](https://www.miningrigrentals.com/account/profiles) and select "Create New Profile"
+6. Give it a name, and select your target algorithm (If you want to mine Florincoin, this will be "Scrypt")
+![](http://skylarostler.com/img/Z00I3kEnAg.png)
+7. After creating your Profile, it should load a section that allows you to add a pool to the profile. Select the pool that you added in Step 4 and click "Add To Profile"
+![](http://skylarostler.com/img/GyYtpbsU6D.png)
+8. After you have successfully added your Profile, you will need to create an API key for the `autominer-api` application to use. You can do this by browsing to the [MRR API keys page](https://www.miningrigrentals.com/account/apikey).
+9. Once you are on the API key page, select "Add A Key" and give it all permissions. 
 
 # Usage
 ## Running the Application

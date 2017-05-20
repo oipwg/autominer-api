@@ -410,6 +410,28 @@ function loadConfig(callback){
 				saveConfig();
 			}
 
+			var weekly_budget = readlineSync.question('How much BTC would you like to spend each week?: ');
+			if (weekly_budget){
+				settings.weekly_budget_btc = weekly_budget;
+			}
+
+			console.log("The \"minimum margin\" is the threashold at which it will begin mining. If this is set to 0, then it will always rent, however if you set it to anything higher, it will wait until the margin is met to begin mining.");
+			var minmargin = readlineSync.question('Please enter your "minimum margin": ');
+			if (weekly_budget){
+				settings.min_margin = minmargin;
+			}
+
+			console.log("The RPI threashold is the minimum machine avaialbilty that will be accepted. An RPI threashold of 80 is standard.")
+			var minrpi = readlineSync.question('Please enter your RPI threashold: ');
+			if (weekly_budget){
+				settings.RPI_threshold = minrpi;
+			}
+
+			var apikey = readlineSync.question('Please enter a password for this API: ');
+			if (weekly_budget){
+				settings.api_key = apikey;
+			}
+
 			if (settings.profileid == -1){
 				var MRRAPI = new MiningRigRentalsAPI(settings.MRR_API_key, settings.MRR_API_secret);
 
