@@ -80,13 +80,13 @@ app.get('/info', function (req, res) {
 })
 
 app.post('/config', function (req, res) {
-  if (req.body.api_key && req.body['api_key'] == settings['api_key']) {
+  if (req.body.api_key && req.body['api_key'] === settings['api_key']) {
     for (var key in req.body) {
-      if (key != 'api_key') {
+      if (key !== 'api_key') {
         if (isNaN(req.body[key])) {
-          if (req.body[key] == 'false')
+          if (req.body[key] === 'false')
             settings[key] = false
-          else if (req.body[key] == 'true')
+          else if (req.body[key] === 'true')
             settings[key] = true
           else
             settings[key] = req.body[key]
@@ -106,7 +106,7 @@ app.post('/config', function (req, res) {
 })
 
 app.post('/logs', function (req, res) {
-  if (req.body.api_key && req.body['api_key'] == settings['api_key'])
+  if (req.body.api_key && req.body['api_key'] === settings['api_key'])
     if (req.body.amount) {
       getLogs(req.body.amount, function (err, logs) {
         res.send(logs)
@@ -124,7 +124,7 @@ app.post('/logs', function (req, res) {
 })
 
 app.post('/rentals', function (req, res) {
-  if (req.body.api_key && req.body['api_key'] == settings['api_key'])
+  if (req.body.api_key && req.body['api_key'] === settings['api_key'])
     if (req.body.amount) {
       getRentals(req.body.amount, function (err, logs) {
         res.send(logs)
@@ -151,7 +151,7 @@ function updateEnpointData () {
   log('info', 'Updating Endpoint Data')
 
   request('https://api.alexandria.io/pool/api/stats', function (error, response, body) {
-    if (!error && response.statusCode == 200) {
+    if (!error && response.statusCode === 200) {
       calculations['pool_hashrate'] = JSON.parse(body)['pools']['florincoin']['hashrate']
       alexandriaPool = true
       if (alexandriaPool && florincoinInfo && miningRigs && libraryd)
@@ -162,7 +162,7 @@ function updateEnpointData () {
   })
 
   request('https://api.alexandria.io/florincoin/getMiningInfo', function (error, response, body) {
-    if (!error && response.statusCode == 200) {
+    if (!error && response.statusCode === 200) {
       calculations['fbd_networkhashps'] = JSON.parse(body)['networkhashps']
       florincoinInfo = true
       if (alexandriaPool && florincoinInfo && miningRigs && libraryd)
@@ -173,7 +173,7 @@ function updateEnpointData () {
   })
 
   request('https://www.miningrigrentals.com/api/v1/rigs?method=list&type=scrypt', function (error, response, body) {
-    if (!error && response.statusCode == 200) {
+    if (!error && response.statusCode === 200) {
       calculations['MiningRigRentals_last10'] = parseFloat(JSON.parse(body)['data']['info']['price']['last_10'])
       miningRigs = true
       if (alexandriaPool && florincoinInfo && miningRigs && libraryd)
@@ -184,7 +184,7 @@ function updateEnpointData () {
   })
 
   request('https://api.alexandria.io/flo-market-data/v1/getAll', function (error, response, body) {
-    if (!error && response.statusCode == 200) {
+    if (!error && response.statusCode === 200) {
       calculations['fmd_weighted_btc'] = parseFloat(JSON.parse(body)['weighted'])
       calculations['fmd_weighted_usd'] = parseFloat(JSON.parse(body)['USD'])
       libraryd = true
@@ -257,7 +257,7 @@ function updateCalculations () {
 function rentMiners () {
   // First search for rentals that are below the average price.
   request('https://www.miningrigrentals.com/api/v1/rigs?method=list&type=scrypt', function (error, response, body) {
-    if (!error && response.statusCode == 200) {
+    if (!error && response.statusCode === 200) {
       log('info', 'Successfully got rig list')
       var rigs = JSON.parse(body)['data']['records']
       var goodRigs = []
@@ -303,7 +303,7 @@ function rentMiners () {
 
         var MRRAPI = new MiningRigRentalsAPI(settings.MRR_API_key, settings.MRR_API_secret)
 
-        if (rigsToRent.length != 0) {
+        if (rigsToRent.length !== 0) {
           MRRAPI.getBalance(function (error, response) {
             if (error) {
               throwError('Error getting balance from MiningRigRentals!', error)
@@ -358,11 +358,11 @@ function log (type, message, extrainfo, table, callback) {
   if (!callback)
     callback = function (data) {}
 
-  if (table == 'log')
+  if (table === 'log')
     var cols = '(timestamp, type, message, extrainfo)'
-  else if (table == 'balance')
+  else if (table === 'balance')
     var cols = '(timestamp, type, amount, extrainfo)'
-  else if (table == 'rentals')
+  else if (table === 'rentals')
     var cols = '(timestamp, type, response, extrainfo)'
 
   // Store log in database
@@ -389,24 +389,24 @@ function loadConfig (callback) {
 
   var data = fs.readFileSync(__dirname + '/settings.cfg')
   try {
-    if (data == '') {
+    if (data === '') {
       copyFile(__dirname + '/settings.example.cfg', __dirname + '/settings.cfg')
       var data = fs.readFileSync(__dirname + '/settings.cfg')
     }
     settings = JSON.parse(data)
 
-    if (settings.MRR_API_key == 'sample-api-key' || settings.MRR_API_secret == 'sample-api-secret' || settings.profileid == -1) {
+    if (settings.MRR_API_key === 'sample-api-key' || settings.MRR_API_secret === 'sample-api-secret' || settings.profileid === -1) {
       console.log('Welcome to the Alexandria Autominer!\n')
       console.log('It looks like you have not yet setup the Autominer yet, please follow the directions found here: bit.ly/2rAVVVi\n\n')
 
-      if (settings.MRR_API_key == 'sample-api-key') {
+      if (settings.MRR_API_key === 'sample-api-key') {
         var api_key = readlineSync.question('Please enter your MiningRigRentals API Key: ')
         settings.MRR_API_key = api_key
 
         saveConfig()
       }
 
-      if (settings.MRR_API_secret == 'sample-api-secret') {
+      if (settings.MRR_API_secret === 'sample-api-secret') {
         var api_secret = readlineSync.question('Please enter your MiningRigRentals API Secret: ')
         settings.MRR_API_secret = api_secret
 
@@ -435,7 +435,7 @@ function loadConfig (callback) {
         settings.api_key = apikey
       }
 
-      if (settings.profileid == -1) {
+      if (settings.profileid === -1) {
         var MRRAPI = new MiningRigRentalsAPI(settings.MRR_API_key, settings.MRR_API_secret)
 
         MRRAPI.listProfiles(function (error, response) {
@@ -490,7 +490,7 @@ function copyFile (source, target) {
 
 function getLogs (amount, callback) {
   var logs = {'amount': amount, 'logs': []}
-  if (amount == -1)
+  if (amount === -1)
     amount = ';'
   else
     amount = ' LIMIT ' + amount + ';'
@@ -510,7 +510,7 @@ function getLogs (amount, callback) {
 
 function getRentals (amount, callback) {
   var logs = {'amount': amount, 'logs': []}
-  if (amount == -1)
+  if (amount === -1)
     amount = ';'
   else
     amount = ' LIMIT ' + amount + ';'
@@ -547,9 +547,9 @@ function calculateSpendable (callback) {
         var unixSunday = sunday.getTime() / 1000
 
         // Calculate how much we have spent since that last unix time.
-        var spentSoFar
-        for (row in rows) {
-          if (row.timestamp >= unixSunday && row.type == 'spend') {
+        var spentSoFar = 0
+        for (var row in rows) {
+          if (row.timestamp >= unixSunday && row.type === 'spend') {
             spentSoFar += row.amount
           }
         }
