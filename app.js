@@ -188,7 +188,7 @@ function updateEnpointData () {
   var MRRAPI = new MiningRigRentalsAPI(settings.MRR_API_key, settings.MRR_API_secret)
   MRRAPI.listRigs({type: 'scrypt'}, function (err, resp) {
     if (!!err)
-      return throwError('Error getting data from https://www.miningrigrentals.com/api/v1/rigs?method=list&type=scrypt', err + '\n' + resp)
+      return throwError('Error getting data from MRR.listRigs', err + '\n' + resp)
 
     var body = JSON.parse(resp)
     if (body['success']) {
@@ -197,7 +197,7 @@ function updateEnpointData () {
       if (alexandriaPool && florincoinInfo && miningRigs && libraryd)
         doneUpdatingEndpoints()
     } else {
-      throwError('Error getting data from https://www.miningrigrentals.com/api/v1/rigs?method=list&type=scrypt', err + '\n' + resp)
+      throwError('Error getting data from MRR.listRigs', err + '\n' + resp)
     }
   })
 
@@ -265,7 +265,7 @@ function rentMiners () {
 
   MRRAPI.listRigs({type: 'scrypt'}, function (err, resp) {
     if (!!err)
-      return throwError('Error getting data from https://www.miningrigrentals.com/api/v1/rigs?method=list&type=scrypt', err + '\n' + resp)
+      return throwError('Error getting data from MRR.listRigs', err + '\n' + resp)
 
     var body = JSON.parse(resp)
     if (body['success']) {
