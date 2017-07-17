@@ -173,17 +173,6 @@ function updateEnpointData () {
     }
   })
 
-  request('https://www.miningrigrentals.com/api/v1/rigs?method=list&type=scrypt', function (error, response, body) {
-    if (!error && response.statusCode === 200) {
-      calculations['MiningRigRentals_last10'] = parseFloat(JSON.parse(body)['data']['info']['price']['last_10'])
-      miningRigs = true
-      if (alexandriaPool && florincoinInfo && miningRigs && libraryd)
-        doneUpdatingEndpoints()
-    } else {
-      throwError('Error getting data from https://www.miningrigrentals.com/api/v1/rigs?method=list&type=scrypt', error + '\n' + response + '\n' + body)
-    }
-  })
-
   request('https://api.alexandria.io/flo-market-data/v1/getAll', function (error, response, body) {
     if (!error && response.statusCode === 200) {
       calculations['fmd_weighted_btc'] = parseFloat(JSON.parse(body)['weighted'])
@@ -197,6 +186,21 @@ function updateEnpointData () {
   })
 
   var MRRAPI = new MiningRigRentalsAPI(settings.MRR_API_key, settings.MRR_API_secret)
+  MRRAPI.listRigs({type: 'scrypt'}, function (err, resp) {
+    if (!!err)
+      return throwError('Error getting data from https://www.miningrigrentals.com/api/v1/rigs?method=list&type=scrypt', err + '\n' + resp)
+
+    var body = JSON.parse(resp)
+    if (body['success']) {
+      calculations['MiningRigRentals_last10'] = parseFloat(body['data']['info']['price']['last_10'])
+      miningRigs = true
+      if (alexandriaPool && florincoinInfo && miningRigs && libraryd)
+        doneUpdatingEndpoints()
+    } else {
+      throwError('Error getting data from https://www.miningrigrentals.com/api/v1/rigs?method=list&type=scrypt', err + '\n' + resp)
+    }
+  })
+
   // List the rentals and log that
   MRRAPI.listMyRentals(function (error, response) {
     if (error) {
@@ -257,10 +261,16 @@ function updateCalculations () {
 
 function rentMiners () {
   // First search for rentals that are below the average price.
-  request('https://www.miningrigrentals.com/api/v1/rigs?method=list&type=scrypt', function (error, response, body) {
-    if (!error && response.statusCode === 200) {
+  var MRRAPI = new MiningRigRentalsAPI(settings.MRR_API_key, settings.MRR_API_secret)
+
+  MRRAPI.listRigs({type: 'scrypt'}, function (err, resp) {
+    if (!!err)
+      return throwError('Error getting data from https://www.miningrigrentals.com/api/v1/rigs?method=list&type=scrypt', err + '\n' + resp)
+
+    var body = JSON.parse(resp)
+    if (body['success']) {
       log('info', 'Successfully got rig list')
-      var rigs = JSON.parse(body)['data']['records']
+      var rigs = body['data']['records']
       var goodRigs = []
       var rigsToRent = []
       // Add the rigs to the good rigs if they are available for at least a week and are below the average price.
@@ -301,8 +311,6 @@ function rentMiners () {
         console.log(rigsToRent)
         console.log('Hashrate to Rent: ' + (totalNewHash / 1000000000))
         console.log('Cost to Rent: ' + totalCost)
-
-        var MRRAPI = new MiningRigRentalsAPI(settings.MRR_API_key, settings.MRR_API_secret)
 
         if (rigsToRent.length !== 0) {
           MRRAPI.getBalance(function (error, response) {
