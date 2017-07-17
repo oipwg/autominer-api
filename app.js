@@ -82,18 +82,19 @@ app.get('/info', function (req, res) {
 app.post('/config', function (req, res) {
   if (req.body.api_key && req.body['api_key'] === settings['api_key']) {
     for (var key in req.body) {
-      if (key !== 'api_key') {
-        if (isNaN(req.body[key])) {
-          if (req.body[key] === 'false')
-            settings[key] = false
-          else if (req.body[key] === 'true')
-            settings[key] = true
+      if (req.body.hasOwnProperty(key))
+        if (key !== 'api_key') {
+          if (isNaN(req.body[key])) {
+            if (req.body[key] === 'false')
+              settings[key] = false
+            else if (req.body[key] === 'true')
+              settings[key] = true
+            else
+              settings[key] = req.body[key]
+          }
           else
-            settings[key] = req.body[key]
+            settings[key] = parseFloat(req.body[key])
         }
-        else
-          settings[key] = parseFloat(req.body[key])
-      }
     }
     saveConfig()
 
@@ -549,9 +550,10 @@ function calculateSpendable (callback) {
         // Calculate how much we have spent since that last unix time.
         var spentSoFar = 0
         for (var row in rows) {
-          if (row.timestamp >= unixSunday && row.type === 'spend') {
-            spentSoFar += row.amount
-          }
+          if (rows.hasOwnProperty(row))
+            if (row.timestamp >= unixSunday && row.type === 'spend') {
+              spentSoFar += row.amount
+            }
         }
 
         // Subtract how much we have spent so far this week and return how much we have left to spend
