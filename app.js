@@ -9,7 +9,6 @@ var bodyParser = require('body-parser')
 app.use(bodyParser.json()) // support json encoded bodies
 app.use(bodyParser.urlencoded({extended: true})) // support encoded bodies
 
-var fs = require('fs')
 var dbfile = __dirname + '/autominer.db'
 var exists = fs.existsSync(dbfile)
 var db = new sqlite3.Database(dbfile)
