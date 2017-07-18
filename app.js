@@ -186,6 +186,22 @@ function updateEnpointData () {
   })
 
   var MRRAPI = new MiningRigRentalsAPI(settings.MRR_API_key, settings.MRR_API_secret)
+  MRRAPI.getBalance(function (error, response) {
+    if (error) {
+      throwError('Error getting balance from MiningRigRentals!', error)
+      return
+    }
+
+    console.log(response)
+    if (!JSON.parse(response).success) {
+      throwError('Error getting balance, ' + JSON.parse(response).message)
+      return
+    }
+    var balance = JSON.parse(response)['data']['confirmed']
+    log('info', 'Current balance is: ' + balance, response)
+    log('curbal', balance, '', 'balance')
+  })
+
   MRRAPI.listRigs({type: 'scrypt'}, function (err, resp) {
     if (!!err)
       return throwError('Error getting data from MRR.listRigs', err + '\n' + resp)
