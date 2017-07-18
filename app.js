@@ -43,6 +43,8 @@ var calculations = {
 }
 
 var settings
+var MRRAPI = null;
+
 
 // Add headers
 app.use(function (req, res, next) {
@@ -185,7 +187,6 @@ function updateEnpointData () {
     }
   })
 
-  var MRRAPI = new MiningRigRentalsAPI(settings.MRR_API_key, settings.MRR_API_secret)
   MRRAPI.getBalance(function (error, response) {
     if (error) {
       throwError('Error getting balance from MiningRigRentals!', error)
@@ -277,8 +278,6 @@ function updateCalculations () {
 
 function rentMiners () {
   // First search for rentals that are below the average price.
-  var MRRAPI = new MiningRigRentalsAPI(settings.MRR_API_key, settings.MRR_API_secret)
-
   MRRAPI.listRigs({type: 'scrypt'}, function (err, resp) {
     if (!!err)
       return throwError('Error getting data from MRR.listRigs', err + '\n' + resp)
@@ -460,9 +459,11 @@ function loadConfig (callback) {
         settings.api_key = apikey
       }
 
-      if (settings.profileid === -1) {
-        var MRRAPI = new MiningRigRentalsAPI(settings.MRR_API_key, settings.MRR_API_secret)
+      if (MRRAPI === null) {
+        MRRAPI = new MiningRigRentalsAPI(settings.MRR_API_key, settings.MRR_API_secret)
+      }
 
+      if (settings.profileid === -1) {
         MRRAPI.listProfiles(function (error, response) {
           if (error) {
             console.log(error)
@@ -488,6 +489,9 @@ function loadConfig (callback) {
         callback(settings)
       }
     } else {
+      if (MRRAPI === null) {
+        MRRAPI = new MiningRigRentalsAPI(settings.MRR_API_key, settings.MRR_API_secret)
+      }
       callback(settings)
     }
   } catch (e) {
