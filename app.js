@@ -1,7 +1,5 @@
 var express = require('express')
 var request = require('request')
-var https = require('https');
-var pem = require('pem');
 var MiningRigRentalsAPI = require('miningrigrentals-api')
 var sqlite3 = require('sqlite3').verbose()
 var fs = require('fs')
@@ -10,6 +8,7 @@ var app = express()
 var bodyParser = require('body-parser')
 app.use(bodyParser.json()) // support json encoded bodies
 app.use(bodyParser.urlencoded({extended: true})) // support encoded bodies
+app.use(express.static('static')); // Include the autominer-frontend repository as the static
 
 var dbfile = __dirname + '/autominer.db'
 var exists = fs.existsSync(dbfile)
@@ -67,10 +66,6 @@ app.use(function (req, res, next) {
 
 	// Pass to next layer of middleware
 	next()
-})
-
-app.get('/', function (req, res) {
-	res.send('')
 })
 
 app.get('/info', function (req, res) {
@@ -650,11 +645,9 @@ function rentIfYouCan() {
 
 loadConfig(function () {
 	var port = 3123
-	pem.createCertificate({days:365, selfSigned:true}, function(err, keys){
-		https.createServer({key: keys.serviceKey, cert: keys.certificate}, app).listen(port, function () {
-			console.log('autominer-api listening on port ' + port + ' using https!')
-			log('info', 'Started up autominer-api on port ' + port)
-		});
+	app.listen(port, function () {
+		console.log('autominer-api listening on port ' + port + ' using https!')
+		log('info', 'Started up autominer-api on port ' + port)
 	});
 
 	getLastRentalTimestamp(function(time){ console.log("Last: " + time + "\nNow: " + parseInt(Date.now()/1000)); });
