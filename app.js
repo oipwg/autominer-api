@@ -367,7 +367,7 @@ function rentMiners () {
 				}
 			})
 		} else {
-			throwError('Error getting rig list from MiningRigRentals!', error + '\n' + response + '\n' + body)
+			throwError('Error getting rig list from MiningRigRentals!', err + '\n' + resp + '\n' + body)
 		}
 	})
 }
@@ -600,32 +600,37 @@ function calculateSpendable (callback) {
 
 function getLastRentalTimestamp (callback) {
 	db.parallelize(function () {
-		db.all('SELECT * FROM rentals ORDER BY id DESC;', function (err, rows) {
+		db.all("SELECT * FROM balance ORDER BY id DESC;", function (err, rows) {
 			if (err) {
 				console.log(err)
 			}
 
-				for (var row in rows) {
-					if (rows.hasOwnProperty(row)){
-						if (row.timestamp >= unixSunday && row.type === 'spend') {
-							spentSoFar += row.amount
-						}
+			for (var i = 0; i < rows.length; i++) {
+				if (rows[i].type && rows[i].type == 'spend' && rows[i].extrainfo){
+					var res = JSON.parse(rows[i].extrainfo);
+					if (res.success){
+						callback(rows[i].timestamp);
+						break;
 					}
-						
 				}
-
-				// Subtract how much we have spent so far this week and return how much we have left to spend
-				var leftToSpend = settings.weekly_budget_btc - spentSoFar
-
-				callback(leftToSpend)
-			} else {
-				// Budget for rental length peroid.
-				var budget = (settings['weekly_budget_btc'] / 168) * settings['rental_length_hrs']
-				console.log('Calculated budget is: ' + budget)
-				callback(budget)
 			}
 		})
 	})
+}
+
+function rentIfYouCan() {
+	getLastRentalTimestamp(function(timestamp){
+		var nowTime = (new Date).getTime();
+		var rentalPeriodSeconds = settings.rental_length_hrs * 60 * 60 * 1000;
+
+		// This is the time stamp -x hours ago from now
+		var lastRentalLatestPossible = nowTime - rentalPeriodSeconds;
+		// If we have not rented in more than our rental period (i.e. our last machine should now be expiring)
+		if (timestamp <= lastRentalLatestPossible){
+			// Now that we know we can rent, send it off to the renter!
+			rentMiners();
+		}
+	});
 }
 
 loadConfig(function () {
@@ -633,15 +638,20 @@ loadConfig(function () {
 	app.listen(port, function () {
 		console.log('autominer-api listening on port ' + port + '!')
 		log('info', 'Started up autominer-api on port ' + port)
-	})
+	});
+
+	getLastRentalTimestamp(function(time){ console.log("Last: " + time + "\nNow: " + parseInt(Date.now()/1000)); });
+
 	// Initially update endpoint data on startup
-	updateEnpointData()
+	updateEnpointData();
 	// 								 minutes * seconds * ms
-	var endpoint = setInterval(updateEnpointData, 15 * 60 * 1000)
+	var endpoint = setInterval(updateEnpointData, 15 * 60 * 1000);
 
 	// After 10 seconds, rent the first batch of rigs, then every x amount of hours after that attempt to rent again.
-	setTimeout(rentMiners, 10 * 1000)
-	var rentals = setInterval(rentMiners, settings.rental_length_hrs * 60 * 60 * 1000)
+	setTimeout(rentIfYouCan, 10 * 1000);
+	// Run the rental checker every 5 minutes to make sure that we always rent if we can.
+	var rentals = setInterval(rentIfYouCan, 5 * 60 * 1000);
+	// settings.rental_length_hrs * 60 * 60 * 1000
 })
 
 process.stdin.resume()//so the program will not close instantly

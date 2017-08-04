@@ -19,7 +19,7 @@
   "dependencies": {
     "body-parser": "^1.15.2",
     "express": "^4.14.0",
-    "miningrigrentals-api": "^1.0.0",
+    "miningrigrentals-api": "^1.0.2",
     "readline-sync": "^1.4.7",
     "request": "^2.72.0",
     "sqlite3": "^3.1.4"
