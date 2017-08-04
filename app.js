@@ -27,6 +27,7 @@ db.serialize(function () {
 // Set the default calculations
 var calculations = {
 	'pool_max_margin': 20,
+	'flo_difficulty': 0,
 	'pool_hashrate': 0,
 	'fbd_networkhashps': 0,
 	'MiningRigRentals_last10': 0,
@@ -44,7 +45,7 @@ var calculations = {
 	'offer_btc': 0
 }
 
-var settings
+var settings;
 var MRRAPI = null;
 
 
@@ -169,6 +170,7 @@ function updateEnpointData () {
 	request('https://api.alexandria.io/florincoin/getMiningInfo', function (error, response, body) {
 		if (!error && response.statusCode === 200) {
 			calculations['fbd_networkhashps'] = JSON.parse(body)['networkhashps']
+			calculations['flo_difficulty'] = JSON.parse(body)['difficulty']
 			florincoinInfo = true
 			if (alexandriaPool && florincoinInfo && miningRigs && libraryd)
 				doneUpdatingEndpoints()
@@ -620,6 +622,8 @@ function getLastRentalTimestamp (callback) {
 	})
 }
 
+var logHighDiff = false;
+
 function rentIfYouCan() {
 	getLastRentalTimestamp(function(timestamp){
 		var nowTime = parseInt((new Date).getTime()/1000);
@@ -629,8 +633,17 @@ function rentIfYouCan() {
 		var lastRentalLatestPossible = nowTime - rentalPeriodSeconds;
 		// If we have not rented in more than our rental period (i.e. our last machine should now be expiring)
 		if (timestamp <= lastRentalLatestPossible){
-			// Now that we know we can rent, send it off to the renter!
-			rentMiners();
+
+			// Check to make sure that we are under the maximum difficulty right now
+			if (calculations['flo_difficulty'] > settings.max_difficulty){
+				if (!logHighDiff){
+					console.log("Difficulty too high... Waiting to rent rigs...");
+					logHighDiff = true;
+				}
+			} else {
+				logHighDiff = false;
+				rentMiners();
+			}
 		}
 	});
 }

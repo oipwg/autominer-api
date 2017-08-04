@@ -117,6 +117,7 @@ $ node app.js
 	'weekly_budget_btc': 1, // Maximum budget to spend per week in BTC
 	'min_margin': 10,		// Margin that you wish to make by mining
 	'RPI_threshold': 80		// Minimum RPI allowed for renting devices
+	'max_difficulty': 1000, // If the difficulty goes higher than this value, the miner will stop renting more rigs. Once it drops back down below, it will start renting rigs again.
 	'api_key': '8uuijau898ue9823uj29iu8d',
 	'MRR_API_key': 'd448a54df68a8sd8f48as4d8f7e6ad48745ds52a1f234',
 	'MRR_API_secret': '4574a1s6d84654as86d4fga8447d8s4ad8a4gf8a4s56'
