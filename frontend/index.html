@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="">
+	<meta name="author" content="">
+
+	<title>Autominer - Dashboard</title>
+
+	<!-- Bootstrap Core CSS -->
+	<link href="./css/bootstrap.min.css" rel="stylesheet">
+
+	<!-- MetisMenu CSS -->
+	<link href="./css/metisMenu.min.css" rel="stylesheet">
+
+	<!-- Timeline CSS -->
+	<link href="./css/timeline.css" rel="stylesheet">
+
+	<!-- Custom CSS -->
+	<link href="./css/sb-admin-2.css" rel="stylesheet">
+
+	<!-- Morris Charts CSS -->
+	<link href="./css/morris.css" rel="stylesheet">
+
+	<!-- Custom Fonts -->
+	<link href="./css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+	<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+	<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+	<!--[if lt IE 9]>
+		<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+		<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+	<![endif]-->
+
+</head>
+
+<body>
+
+	<div id="wrapper">
+
+		<!-- Navigation -->
+		<nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0">
+			<div class="navbar-header">
+				<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+					<span class="sr-only">Toggle navigation</span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+				<div class="navbar-brand" style="margin-top: -6px">
+					<img style="float: left;" src="./img/alexandria-logo.png" width="30px" height="30px" />
+					<a class="navbar-brand" style="margin-top: -10px; margin-left: -5px; font-size: 20 px" href="index.html">ΛLΞXΛNDRIΛ Autominer</a>
+				</div>
+			</div>
+			<p style="text-align: center; margin-top: 10px; margin-bottom: -5px;">Connected to server: <code id="serverIP"></code><button class="btn btn-outline btn-warning" onclick="showLogin()">Edit</button></p>
+			<div style="margin-top: -37px; margin-right: 20px"><button class="btn btn-outline btn-danger pull-right" onclick="logout()">Logout</button></div>
+
+			<div class="navbar-default sidebar" role="navigation">
+				<div class="sidebar-nav navbar-collapse">
+					<ul class="nav" id="side-menu">
+						<li style="text-align: center">
+							<p>MRR Balance: <code id="mrrBalance"></code></p>
+						</li>
+						<li class="sidebar-search">
+							<div class="input-group custom-search-form">
+								<input type="text" class="form-control" placeholder="Search...">
+								<span class="input-group-btn">
+								<button class="btn btn-default" type="button">
+									<i class="fa fa-search"></i>
+								</button>
+							</span>
+							</div>
+							<!-- /input-group -->
+						</li>
+						<li>
+							<a href="#" onclick="showDashboard()"><i class="fa fa-dashboard fa-fw"></i> Dashboard</a>
+						</li>
+						<li>
+							<a href="#" onclick="showConfig()"><i class="fa fa-check-square-o fa-fw"></i> Config</a>
+						</li>
+						<li>
+							<a href="#" onclick="showLogs()"><i class="fa fa-list fa-fw"></i> Logs</a>
+						</li>
+					</ul>
+				</div>
+				<!-- /.sidebar-collapse -->
+			</div>
+			<!-- /.navbar-static-side -->
+		</nav>
+
+		<!-- #dashboard -->
+		<div id="page-wrapper" class="dashboard">
+			<div class="row">
+				<div class="col-lg-12">
+					<h1 class="page-header">Dashboard</h1>
+				</div>
+				<!-- /.col-lg-12 -->
+			</div>
+			<!-- /.row -->
+			<div class="row">
+				<div class="col-lg-4 col-md-4">
+					<div class="panel panel-green">
+						<div class="panel-heading">
+							<div class="row">
+								<div class="col-xs-3">
+									<i class="fa fa-tasks fa-5x"></i>
+								</div>
+								<div class="col-xs-9 text-right">
+									<div class="huge" id="numberOfMiners">0</div>
+									<div id="numberOfMinersLabel">Current Miners</div>
+								</div>
+							</div>
+						</div>
+						<a href="#">
+							<div class="panel-footer">
+								<span class="pull-left">View Details</span>
+								<span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
+								<div class="clearfix"></div>
+							</div>
+						</a>
+					</div>
+				</div>
+				<div class="col-lg-4 col-md-4">
+					<div class="panel panel-red">
+						<div class="panel-heading">
+							<div class="row">
+								<div class="col-xs-3">
+									<i class="fa fa-area-chart fa-5x"></i>
+								</div>
+								<div class="col-xs-9 text-right">
+									<div class="huge" id="hashrateText">0MH/s</div>
+									<div id="">Current Hashrate</div>
+								</div>
+							</div>
+						</div>
+						<a href="#">
+							<div class="panel-footer">
+								<span class="pull-left">View Details</span>
+								<span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
+								<div class="clearfix"></div>
+							</div>
+						</a>
+					</div>
+				</div>
+				<div class="col-lg-4 col-md-4">
+					<div class="panel panel-yellow">
+						<div class="panel-heading">
+							<div class="row">
+								<div class="col-xs-3">
+									<i class="fa fa-shopping-cart fa-5x"></i>
+								</div>
+								<div class="col-xs-9 text-right">
+									<div class="huge" id="btcSpentThisWeek">0 BTC</div>
+									<div>Spent in the past week</div>
+								</div>
+							</div>
+						</div>
+						<a href="#">
+							<div class="panel-footer">
+								<span class="pull-left">View Details</span>
+								<span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
+								<div class="clearfix"></div>
+							</div>
+						</a>
+					</div>
+				</div>
+			</div>
+			<!-- /.row -->
+			<div class="row">
+				<div class="col-lg-8">
+					<div class="alert alert-warning" role="alert" id="lowBalanceWarning">You have <strong id="walletBalanceDaysLeft">0</strong> BTC left in your wallet. It is estimated you will run out of funding in ~<strong id="daysLeft"></strong> days.</div>
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<i class="fa fa-bar-chart-o fa-fw"></i> Hashrate History
+							<div class="pull-right">
+								<div class="btn-group">
+									<button type="button" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown">
+										Actions
+										<span class="caret"></span>
+									</button>
+									<ul class="dropdown-menu pull-right" role="menu">
+										<li><a href="#">Action</a>
+										</li>
+										<li><a href="#">Another action</a>
+										</li>
+										<li><a href="#">Something else here</a>
+										</li>
+										<li class="divider"></li>
+										<li><a href="#">Separated link</a>
+										</li>
+									</ul>
+								</div>
+							</div>
+						</div>
+						<!-- /.panel-heading -->
+						<div class="panel-body">
+							<div id="hashrate-chart"></div>
+						</div>
+						<!-- /.panel-body -->
+					</div>
+					<!-- /.panel -->
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<i class="fa fa-bar-chart-o fa-fw"></i> Historian Data
+							<div class="pull-right">
+								<div class="btn-group">
+									<button type="button" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown">
+										Actions
+										<span class="caret"></span>
+									</button>
+									<ul class="dropdown-menu pull-right" role="menu">
+										<li><a href="#">Action</a>
+										</li>
+										<li><a href="#">Another action</a>
+										</li>
+										<li><a href="#">Something else here</a>
+										</li>
+										<li class="divider"></li>
+										<li><a href="#">Separated link</a>
+										</li>
+									</ul>
+								</div>
+							</div>
+						</div>
+						<!-- /.panel-heading -->
+						<div class="panel-body">
+							<div id="historian-chart"></div>
+						</div>
+						<!-- /.panel-body -->
+					</div>
+					<!-- /.panel -->
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							Spending History
+						</div>
+						<!-- /.panel-heading -->
+						<div class="panel-body">
+							<div class="row">
+								<div class="col-lg-12">
+									<div class="table-responsive">
+										<table class="table table-bordered table-hover table-striped">
+											<thead>
+												<tr>
+													<th>Date</th>
+													<th>Time</th>
+												</tr>
+											</thead>
+											<tbody id="spendingTableBody">
+											</tbody>
+										</table>
+									</div>
+									<!-- /.table-responsive -->
+								</div>
+								<!-- /.col-lg-8 (nested) -->
+							</div>
+							<!-- /.row -->
+						</div>
+						<!-- /.panel-body -->
+					</div>
+				</div>
+				<!-- /.col-lg-8 -->
+				<div class="col-lg-4">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<i class="fa fa-bell fa-fw"></i> Notifications Panel
+						</div>
+						<!-- /.panel-heading -->
+						<div class="panel-body">
+							<div class="list-group" id="notificationsPanel">
+								
+							</div>
+							<!-- /.list-group -->
+							<a href="#" class="btn btn-default btn-block">View All Alerts</a>
+						</div>
+						<!-- /.panel-body -->
+					</div>
+				</div>
+				<!-- /.col-lg-4 -->
+			</div>
+			<!-- /.row -->
+		</div>
+		<!-- /#dashboard -->
+
+		<!-- #config -->
+		<div id="page-wrapper" class="config">
+			<div class="row">
+				<div class="col-lg-12">
+					<h1 class="page-header">Config</h1>
+				</div>
+				<!-- /.col-lg-12 -->
+			</div>
+			<!-- /.row -->
+			<div class="row">
+				
+			</div>
+			<!-- /.row -->
+			<div class="row">
+				<div class="col-lg-8">
+					<div class="form-horizontal">
+						<div class="form-group">
+							<label for="inputEmail3" class="col-sm-4 control-label">MiningRigRentals API Key</label>
+							<div class="col-sm-8">
+								<input type="text" class="form-control" id="mrrAPIKey" placeholder="">
+							</div>
+						</div>
+						<div class="form-group">
+							<label for="inputPassword3" class="col-sm-4 control-label">MiningRigRentals API Secret</label>
+							<div class="col-sm-7">
+								<input type="password" class="form-control" id="mrrAPISecret" placeholder="">
+							</div>
+							<div class="col-sm-1" style="margin-left: -22px;">
+								<button class="btn btn-outline btn-info" onclick="$('#mrrAPISecret').clone().attr('type','text').insertAfter('#mrrAPISecret').prev().remove();">Show</button>
+							</div>
+						</div>
+						<div class="form-group">
+							<label for="inputPassword3" class="col-sm-4 control-label">Weekly BTC Budget</label>
+							<div class="col-sm-4">
+								<input type="text" class="form-control" id="weeklyBTCBudget" placeholder="0.01">
+							</div>
+						</div>
+						<div class="form-group">
+							<label for="inputPassword3" class="col-sm-4 control-label">Minimum Margin</label>
+							<div class="col-sm-2">
+								<input type="number" class="form-control" id="minimumMargin" placeholder="0">
+							</div>
+						</div>
+						<div class="form-group">
+							<label for="inputPassword3" class="col-sm-4 control-label">Rental Length</label>
+							<div class="col-sm-2">
+								<input type="number" class="form-control" id="rentalLength" placeholder="24">
+							</div>
+						</div>
+						<div class="form-group">
+							<label for="inputPassword3" class="col-sm-4 control-label">RPI Threshold</label>
+							<div class="col-sm-4">
+								<input type="text" class="form-control" id="rpiThreashold" placeholder="80">
+								<p class="help-block">Minimum RPI (Rating based on avaiablility and past success) to rent rigs at. Will not rent any rigs under this RPI.</p>
+							</div>
+						</div>
+						<div class="form-group">
+							<label for="inputPassword3" class="col-sm-4 control-label">Profile</label>
+							<div class="col-sm-4">
+								<select class="form-control" id="profileSelect">
+								</select>
+							</div>
+						</div>
+						<div class="form-group">
+							<label for="inputPassword3" class="col-sm-4 control-label">Misc.</label>
+							<div class="col-sm-8">
+								<input type="checkbox" id="spendEntireWeeklyCheckbox"> Spend entire weekly budget if conditions are met
+								<p class="help-block">If this box is checked the application will rent up as many machines as meet the minimum requirements and possibily spend your entire budget. If this is not checked it will make sure to spread out the cost over the entire week rather than all at once.</p>
+							</div>
+						</div>
+						<div class="form-group">
+							<div class="col-sm-offset-4 col-sm-8">
+								<button class="btn btn-default" onclick="saveConfig()">Save</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- /.row -->
+		</div>
+		<!-- /#config -->
+
+		<!-- #logs -->
+		<div id="page-wrapper" class="logs">
+			<div class="row">
+				<div class="col-lg-12">
+					<h1 class="page-header">Logs</h1>
+				</div>
+				<!-- /.col-lg-12 -->
+			</div>
+			<!-- /.row -->
+			<div class="row">
+				<div class="col-lg-12">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<i class="fa fa-bell fa-fw"></i> All logs
+							<div style="float: right; margin-top: -7px;">
+								<button class="btn btn-default" onclick="togButton('info')"><i class="fa fa-info fa-fw"></i>Info</button>
+								<button class="btn btn-success" onclick="togButton('rentals')"><i class="fa fa-credit-card fa-fw"></i>Rentals</button>
+								<button class="btn btn-danger" onclick="togButton('errors')"><i class="fa fa-bolt fa-fw"></i>Errors</button>
+							</div>
+						</div>
+						<!-- /.panel-heading -->
+						<div class="panel-body">
+							<div class="list-group" id="logList">
+								<button style="vertical-align: center; align-self: center" class="btn btn-default" onclick="togButton('load')"><i class="fa fa-loading fa-fw"></i>Load Logs</button>
+
+								<!--<a href="#" class="list-group-item">
+									<i class="fa fa-comment fa-fw"></i> New Comment
+									<span class="pull-right text-muted small"><em>4 minutes ago</em>
+									</span>
+								</a>
+								<a href="#" class="list-group-item">
+									<i class="fa fa-twitter fa-fw"></i> 3 New Followers
+									<span class="pull-right text-muted small"><em>12 minutes ago</em>
+									</span>
+								</a>
+								<a href="#" class="list-group-item">
+									<i class="fa fa-envelope fa-fw"></i> Message Sent
+									<span class="pull-right text-muted small"><em>27 minutes ago</em>
+									</span>
+								</a>
+								<a href="#" class="list-group-item">
+									<i class="fa fa-tasks fa-fw"></i> New Task
+									<span class="pull-right text-muted small"><em>43 minutes ago</em>
+									</span>
+								</a>
+								<a href="#" class="list-group-item list-group-item-warning">
+									<i class="fa fa-upload fa-fw"></i> Server Rebooted
+									<span class="pull-right text-muted small"><em>11:32 AM</em>
+									</span>
+								</a>
+								<a href="#" class="list-group-item list-group-item-danger">
+									<i class="fa fa-bolt fa-fw"></i> <span class="">Server Crashed!</span>
+									<span class="pull-right text-muted small"><em>11:13 AM</em>
+									</span>
+								</a>
+								<a href="#" class="list-group-item">
+									<i class="fa fa-warning fa-fw"></i> Server Not Responding
+									<span class="pull-right text-muted small"><em>10:57 AM</em>
+									</span>
+								</a>
+								<a href="#" class="list-group-item">
+									<i class="fa fa-shopping-cart fa-fw"></i> New Order Placed
+									<span class="pull-right text-muted small"><em>9:49 AM</em>
+									</span>
+								</a>
+								<a href="#" class="list-group-item">
+									<i class="fa fa-money fa-fw"></i> Payment Received
+									<span class="pull-right text-muted small"><em>Yesterday</em>
+									</span>
+								</a>-->
+							</div>
+							<!-- /.list-group -->
+						</div>
+						<!-- /.panel-body -->
+					</div>
+				</div>
+				<!-- /.col-lg-4 -->
+			</div>
+			<!-- /.row -->
+		</div>
+		<!-- /#logs -->
+
+		<!-- #login -->
+		<div id="page-wrapper" class="login">
+			<div class="row">
+				<div class="col-lg-12">
+					<h1 class="page-header">Please Login!</h1>
+				</div>
+				<!-- /.col-lg-12 -->
+			</div>
+			<!-- /.row -->
+			<div class="row">
+				
+			</div>
+			<!-- /.row -->
+			<div class="row">
+				<div class="col-lg-8">
+					<div class="form-horizontal">
+						<div class="form-group">
+							<label for="inputEmail3" class="col-sm-4 control-label">API Server (ip:port i.e. 127.0.0.1:3123)</label>
+							<div class="col-sm-8">
+								<input type="text" class="form-control" id="apiServer" placeholder="">
+							</div>
+						</div>
+						<div class="form-group">
+							<label for="inputPassword3" class="col-sm-4 control-label">API Password</label>
+							<div class="col-sm-8">
+								<input type="password" class="form-control" id="apiPassword" placeholder="">
+							</div>
+						</div>
+						<div class="form-group">
+							<label for="inputPassword3" class="col-sm-4 control-label">Remember Me</label>
+							<div class="col-sm-8">
+								<input type="checkbox" id="rememberMeCheckbox"> Keep me logged in
+								<p class="help-block">If this box is checked the application will stay logged in on this browser until you press the logout button. This persists between sessions.</p>
+							</div>
+						</div>
+						<div class="form-group">
+							<div class="col-sm-offset-4 col-sm-8">
+								<button class="btn btn-default" onclick="login()">Login</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- /.row -->
+		</div>
+		<!-- /#login -->
+
+	</div>
+	<!-- /#wrapper -->
+
+	<!-- jQuery -->
+	<script src="./js/jquery.min.js"></script>
+
+	<!-- Bootstrap Core JavaScript -->
+	<script src="./js/bootstrap.min.js"></script>
+
+	<!-- Metis Menu Plugin JavaScript -->
+	<script src="./js/metisMenu.min.js"></script>
+
+	<!-- Morris Charts JavaScript -->
+	<script src="./js/raphael-min.js"></script>
+	<script src="./js/morris.min.js"></script>
+	<script src="./js/morris-data.js"></script>
+
+	<!-- Custom Theme JavaScript -->
+	<script src="./js/sb-admin-2.js"></script>
+
+	<script type="text/javascript">
+		var loggedIn = false;
+		var server = "";
+		var apipw = "";
+
+		var info = true;
+		var rentals = true;
+		var errors = true;
+
+		var config = {};
+		var logs = {};
+		var rentalLogs = {};
+
+		var togButton = function(type){
+			if (type == 'info')
+				info = !info;
+			if (type == 'rentals')
+				rentals = !rentals;
+			if (type == 'errors')
+				errors = !errors;
+
+			appendLogs();
+		}
+
+		var appendLogs = function(){
+			$('#logList').empty();
+			var data = logs;
+			var numAppended = 0;
+			var latestBalance = 0;
+			for (var i = 0; i < data.logs.length; i++) {
+				if (numAppended >= 1000)
+					continue;
+				if (data.logs[i].type == 'error'){
+					if (!errors)
+						continue;
+					var color = 'danger';
+					var fontAwe = 'bolt';
+				}
+				if (data.logs[i].type == 'info'){
+					if (!info)
+						continue;
+					var color = 'primary';
+					var fontAwe = 'info';
+				}
+				if (data.logs[i].type == 'rental'){
+					if (!rentals)
+						continue;
+					var color = 'success';
+					var fontAwe = 'check';
+				}
+				var message = data.logs[i].message;
+
+				if (message == "Finished updating endpoint data, updating calculations!")
+					message = "Updated Calculations"
+
+				if (message.includes("Started up autominer-api")){
+					color = "info"
+					fontAwe = "play"
+				}
+				if (message.includes("Current balance is")){
+					color = "warning"
+					fontAwe = "money"
+
+					if (latestBalance === 0){
+						latestBalance = parseFloat(message.replace('Current balance is: ', ''));
+					}
+				}
+				if (message.includes("Updat")){
+					color = "default"
+					fontAwe = "spinner"
+				}
+				var time = new Date(data.logs[i].timestamp * 1000);
+				$('#logList').append('<a href="#" class="list-group-item ' + (color ? 'list-group-item-' + color : "") + '">\
+										  <i class="fa fa-' + fontAwe + ' fa-fw"></i> <span class="">' + message + '</span>\
+										  <span class="pull-right text-muted small"><em>' + time + '</em>\
+										  </span>\
+									  </a>');
+
+				if (numAppended <= 10){
+					$('#notificationsPanel').append('<a href="#" style="padding-bottom: 25px" class="list-group-item ' + (color ? 'list-group-item-' + color : "") + '">\
+										  <i class="fa fa-' + fontAwe + ' fa-fw"></i> <span class="">' + message + '</span>\
+										  <span class="pull-right text-muted small"><em>' + time + '</em>\
+										  </span>\
+									  </a>');
+				}
+				numAppended++;
+			}
+
+			var fundingDaysLeft = latestBalance / (config.weekly_budget_btc / 7);
+			if (fundingDaysLeft <= 7){
+				$('#walletBalanceDaysLeft').text(latestBalance);
+				$('#daysLeft').text(fundingDaysLeft.toFixed(1));
+				$('#lowBalanceWarning').show();
+			}
+
+			$('#mrrBalance').text(latestBalance);
+
+			// Load BTC spent in last week & Spending history.
+		    $('#spendingTableBody').empty();
+		    var data = logs;
+		    var numAppended = 0;
+		    var spentThisWeek = 0;
+		    for (var i = 0; i < data.logs.length; i++) {
+				if (data.logs[i].type == 'error'){
+					continue;
+				}
+				if (data.logs[i].type == 'info'){
+					continue;
+				}
+				if (data.logs[i].type == 'rental'){
+					if (data.logs[i].timestamp > (Math.floor(Date.now() / 1000)) - (60*60*24*7)){
+						var dataJSON = JSON.parse(data.logs[i].extrainfo);
+						spentThisWeek += parseFloat(dataJSON.data.price);
+					}
+
+					if (numAppended < 10) {
+						console.log(data.logs[i]);
+						var time = new Date(data.logs[i].timestamp * 1000);
+						var message = data.logs[i].message;
+						message.replace('Successfully rented rig: ', 'Rented Rig #');
+						$('#spendingTableBody').append('<tr>\
+															<td>' + message + '</td>\
+															<td>' + time + '</td>\
+														</tr>')
+						numAppended++;
+					}
+				}
+			}
+
+			$('#btcSpentThisWeek').text(parseFloat(spentThisWeek).toFixed(8) + ' BTC');
+		}
+
+		var getBalance = function(){
+			if (logs){
+				for (var i = logs.logs.length - 1; i >= 0; i--) {
+					logs.logs[i]
+				}
+			}
+		}
+
+		var getLogs = function(){
+			$.post('https://' + apiServer + '/logs', {api_key: apipw, amount: -1}, function(data, status){
+				logs = data;
+				console.log(logs);
+				appendLogs();
+			}, 'JSON');
+		}
+
+		var getRental = function(){
+			$.post('https://' + apiServer + '/rentals', {api_key: apipw, amount: -1}, function(data, status){
+				rentalLogs = data;
+				console.log(rentalLogs);
+				loadDashboard();
+			}, 'JSON');
+		}
+
+		var loadDashboard = function(){
+			var chartData = [];
+			var chartykeys = [];
+			var chartlabels = [];
+			var miners = [];
+
+			var maxHashrate = 0;
+
+			// chartData.push({period: ((Math.floor(Date.now() / 1000)) - (60*60*24)) * 1000 });
+
+			for (var i = 0; i < rentalLogs.logs.length; i++) {
+				var responseJSON = JSON.parse(rentalLogs.logs[i].response);
+				var data = {};
+				if (rentalLogs.logs[i].timestamp < (Math.floor(Date.now() / 1000)) - (60*60*24)){
+					continue;
+				}
+				if(responseJSON.data){
+					var logTotalHashrate = 0;
+					for (var j = 0; j < responseJSON.data.records.length; j++) {
+						var minerID = responseJSON.data.records[j].id;
+						var minerName = responseJSON.data.records[j].name;
+						var minerCurrentHashrate = (responseJSON.data.records[j].current.hash_30m / 1000000).toFixed(2);
+
+						logTotalHashrate += parseFloat(minerCurrentHashrate);
+
+
+						if (!miners[minerID])
+							miners[minerID] = minerName;
+
+						data[minerID] = minerCurrentHashrate
+					}
+					if (parseFloat(logTotalHashrate) > parseFloat(maxHashrate))
+							maxHashrate = parseFloat(logTotalHashrate);
+
+					var timestamp = rentalLogs.logs[i].timestamp;
+					data['period'] = timestamp * 1000;
+					chartData.push(data);
+				}
+			}
+			for (var miner in miners){
+				chartlabels.push(miners[miner]);
+				chartykeys.push(parseInt(miner));
+			}
+			/*for (var data in chartData){
+				for (var miner in miners) {
+					if (!chartData[data][miner])
+						chartData[data][miner] = 0;
+				}
+			}*/
+
+			console.log(chartData);
+			console.log(chartykeys);
+			console.log(chartlabels);
+
+			// Clear out before generating.
+			$('#hashrate-chart').empty();
+
+			maxHashrate += 25;
+			console.log(maxHashrate);
+
+			Morris.Area({
+		        element: 'hashrate-chart',
+		        data: chartData,
+		        xkey: 'period',
+		        xLabels: "hour",
+		        postUnits: "MH/s",
+		        ykeys: chartykeys,
+		        ymax: maxHashrate,
+		        labels: chartlabels,
+		        pointSize: 2,
+		        hideHover: 'auto',
+		        continuousLine: true,
+		        behaveLikeLine: false,
+		        resize: true
+		    });
+
+			// Load number of current miners
+		    if (rentalLogs.logs[0]){
+		    	var resJSON = JSON.parse(rentalLogs.logs[0].response);
+		    	if (resJSON.data){
+			    	var numberOfMiners = resJSON.data.records.length;
+			    	if (numberOfMiners == 1)
+			    		$('#numberOfMinersLabel').text('Current Miner');
+			    	else
+			    		$('#numberOfMinersLabel').text('Current Miners');
+
+			    	$('#numberOfMiners').text(numberOfMiners);
+
+			    	var hashrate = 0;
+			    	for (var i = 0; i < resJSON.data.records.length; i++) {
+			    		hashrate += parseFloat(parseFloat(resJSON.data.records[i].current.hash_30m) / 1000000);
+			    	}
+
+			    	$('#hashrateText').text(hashrate.toFixed(2) + " MH/s");
+			    }
+		    }
+		}
+
+		var loadHistorian = function(){
+			var timeNow = (Date.now()/1000).toFixed(0);
+			var timeDayAgo = timeNow - (60*60*24*7);
+			$.post('https://api.alexandria.io/alexandria/v1/historian/summary', '{ "min-time": ' + timeDayAgo + ', "max-time": ' + timeNow + ' }', function(data, status){
+				console.log(data);
+				if (data['data-points']){
+					var points = data['data-points'];
+					var historianChartData = [];
+					var dataPointsToWrite = 250;
+					// If less than 100 datapoints available, only plot those.
+					if (points.length < dataPointsToWrite){
+						dataPointsToWrite = points.length;
+					}
+					for (var i = dataPointsToWrite - 1; i >= 0; i--) {
+						historianChartData.push({ block: (points[i].blockTime * 1000), pool_hashrate: (points[i].pool_hashrate/1000000).toFixed(2), fbd_networkhashps: (points[i].fbd_networkhashps/1000000).toFixed(2) });
+					}
+					console.log(historianChartData);
+
+					Morris.Area({
+				        element: 'historian-chart',
+				        data: historianChartData,
+				        xkey: 'block',
+				        ykeys: ['pool_hashrate', 'fbd_networkhashps'],
+				        labels: ['pool_hashrate', 'fbd_networkhashps'],
+				        xLabels: ['day'],
+				        postUnits: "MH/s",
+				        pointSize: 2,
+				        hideHover: 'auto',
+				        continuousLine: false,
+				        behaveLikeLine: true,
+				        resize: true,
+				        parseTime: true
+				    });
+				} else {
+					console.log(data);
+				}
+			}, 'JSON').fail(function(err) {
+			    console.log( err );
+			});
+		}
+
+		var login = function(){
+			var serv = $('#apiServer').val();
+			var password = $('#apiPassword').val();
+
+			$.post('https://' + serv + '/config', {api_key: password}, function(data, status){
+				if (!data.success && !data.weekly_budget_btc)
+					alert(data.message);
+				else {
+					config = data;
+
+					loadConfig();
+
+					// Update server IP
+					$('#serverIP').text(serv);
+					// Password is correct, if "remember me" is set, save to local storage, if not just load the Dashboard/API and save the variable locally.
+					if(document.getElementById('rememberMeCheckbox').checked) {
+						apiServer = serv;
+						apipw = password;
+					    loggedIn = true;
+
+					    // Save to local storage
+					    localStorage.as = apiServer;
+					    localStorage.ap = apipw;
+
+					    getLogs();
+						getRental();
+						showDashboard();
+						loadHistorian();
+					} else {
+						apiServer = serv;
+						apipw = password;
+					    loggedIn = true;
+
+					    getLogs();
+						getRental();
+					    showDashboard();
+						loadHistorian();
+					}
+				}
+
+				console.log(data);
+			}, 'JSON').fail(function(err) {
+			    console.log( err );
+			});
+		}
+
+		var logout = function(){
+			localStorage.as = "";
+			localStorage.ap = "";
+			location.reload();
+		}
+
+		var loadConfig = function(){
+			$('#mrrAPIKey').val(config.MRR_API_key);
+			$('#mrrAPISecret').val(config.MRR_API_secret);
+			$('#rpiThreashold').val(config.RPI_threshold);
+			$('#minimumMargin').val(config.min_margin);
+			// $('#profileSelect').val(config.profileid);
+			$('#rentalLength').val(config.rental_length_hrs);
+			$('#weeklyBTCBudget').val(config.weekly_budget_btc);
+
+			for (var i = config.profiles.length - 1; i >= 0; i--) {
+				var id = config.profiles[i].id;
+				var name = config.profiles[i].name;
+
+				var x = document.getElementById("profileSelect");
+				var option = document.createElement("option");
+				option.id = id;
+				option.text = name + " (" + id + ")";
+				x.add(option);
+
+				if (id == config.profileid)
+					x.value = name + " (" + id + ")";
+			}
+
+			if (config.spend_entire_weekly_at_once){
+				$('#spendEntireWeeklyCheckbox').attr('checked','checked');
+			} else {
+				$('#spendEntireWeeklyCheckbox').removeAttr('checked');
+			}
+		}
+
+		var saveConfig = function(){
+			var mrrAPIKey = $('#mrrAPIKey').val();
+			var mrrAPISecret = $('#mrrAPISecret').val();
+			var rpiThreashold = $('#rpiThreashold').val();
+			var minimumMargin = $('#minimumMargin').val();
+			var profileSelect = $('#profileSelect').val();
+			var rentalLength = $('#rentalLength').val();
+			var weeklyBTCBudget = $('#weeklyBTCBudget').val();
+		}
+
+		var showDashboard = function(){
+			if (!loggedIn)
+				return;
+			$('.dashboard').show();
+			$('.config').hide();
+			$('.logs').hide();
+			$('.login').hide();
+		}
+
+		var showConfig = function(){
+			if (!loggedIn)
+				return;
+			$('.dashboard').hide();
+			$('.config').show();
+			$('.logs').hide();
+			$('.login').hide();
+		}
+
+		var showLogs = function(){
+			if (!loggedIn)
+				return;
+			$('.dashboard').hide();
+			$('.config').hide();
+			$('.logs').show();
+			$('.login').hide();
+		}
+
+		var showLogin = function(){
+			$('.dashboard').hide();
+			$('.config').hide();
+			$('.logs').hide();
+			$('.login').show();
+		}
+
+		if (typeof(Storage) !== "undefined") {
+		    // Code for localStorage/sessionStorage.
+		    if (localStorage.as){
+		    	apiServer = localStorage.as;
+		    }
+		    if (localStorage.ap){
+		    	apipw = localStorage.ap;
+		    }
+
+		    if (apiServer && apipw){
+		    	$('#apiServer').val(apiServer);
+		    	$('#apiPassword').val(apipw);
+		    	$('#rememberMeCheckbox').attr('checked','checked');
+		    	login();
+		    }
+		} else {
+		    // Sorry! No Web Storage support..
+		}
+
+		if (!loggedIn){
+			showLogin();
+		} else {
+			showDashboard();
+			getLogs();
+			getRental();
+			loadHistorian();
+		}
+
+		// Default hide the following
+		$('#lowBalanceWarning').hide();
+	</script>
+
+</body>
+
+</html>
