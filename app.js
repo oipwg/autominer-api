@@ -142,15 +142,36 @@ app.post('/rentals', function (req, res) {
 	}
 })
 
+var alexandriaPool = false
+var florincoinInfo = false
+var miningRigs = false
+var libraryd = false
+
 function updateEnpointData () {
 	// Request data async from each endpoint. When all four have been queried then update the calculations.
-	var alexandriaPool = false
-	var florincoinInfo = false
-	var miningRigs = false
-	var libraryd = false
+	alexandriaPool = false
+	florincoinInfo = false
+	miningRigs = false
+	libraryd = false
 
 	log('info', 'Updating Endpoint Data')
 
+	updatePoolStats();
+
+	updateMiningInfo();
+
+	updateFloMarketData();
+
+	updateBalance();
+
+	getRigList();
+
+	updateRentals();
+
+	updateProfiles();
+}
+
+function updatePoolStats(){
 	request('https://api.alexandria.io/pool/api/stats', function (error, response, body) {
 		if (!error && response.statusCode === 200) {
 			calculations['pool_hashrate'] = JSON.parse(body)['pools']['florincoin']['hashrate']
@@ -158,10 +179,13 @@ function updateEnpointData () {
 			if (alexandriaPool && florincoinInfo && miningRigs && libraryd)
 				doneUpdatingEndpoints()
 		} else {
-			throwError('Error getting data from https://api.alexandria.io/pool/api/stats', error + '\n' + response + '\n' + body)
+			logError('Error getting data from https://api.alexandria.io/pool/api/stats', error + '\n' + response + '\n' + body)
+			updatePoolStats()
 		}
 	})
+}
 
+function updateMiningInfo(){
 	request('https://api.alexandria.io/florincoin/getMiningInfo', function (error, response, body) {
 		if (!error && response.statusCode === 200) {
 			calculations['fbd_networkhashps'] = JSON.parse(body)['networkhashps']
@@ -170,10 +194,13 @@ function updateEnpointData () {
 			if (alexandriaPool && florincoinInfo && miningRigs && libraryd)
 				doneUpdatingEndpoints()
 		} else {
-			throwError('Error getting data from https://api.alexandria.io/florincoin/getMiningInfo', error + '\n' + response + '\n' + body)
+			logError('Error getting data from https://api.alexandria.io/florincoin/getMiningInfo', error + '\n' + response + '\n' + body)
+			updateMiningInfo();
 		}
 	})
+}
 
+function updateFloMarketData(){
 	request('https://api.alexandria.io/flo-market-data/v1/getAll', function (error, response, body) {
 		if (!error && response.statusCode === 200) {
 			calculations['fmd_weighted_btc'] = parseFloat(JSON.parse(body)['weighted'])
@@ -182,9 +209,54 @@ function updateEnpointData () {
 			if (alexandriaPool && florincoinInfo && miningRigs && libraryd)
 				doneUpdatingEndpoints()
 		} else {
-			throwError('Error getting data from https://api.alexandria.io/flo-market-data/v1/getAll', error + '\n' + response + '\n' + body)
+			logError('Error getting data from https://api.alexandria.io/flo-market-data/v1/getAll', error + '\n' + response + '\n' + body)
+			updateFloMarketData()
 		}
 	})
+}
+
+function updateRentals(){
+	// List the rentals and log that
+	MRRAPI.listMyRentals(function (error, response) {
+		if (error) {
+			console.log(error)
+			return
+		}
+
+		try {
+			var body = JSON.parse(response)
+		} catch (e) {
+			throwError("Error parsing JSON on updateRentals");
+		}
+
+		if (body['success']){
+			log('status', response, '', 'rentals')
+		} else {
+			updateRentals();
+		}
+		
+	})
+}
+
+function updateProfiles(callback){
+	if (!callback){
+		callback = function(){}
+	}
+	MRRAPI.listProfiles(function (error, response) {
+		if (error) {
+			console.log(error)
+			return
+		}
+		// Just write to the settings, don't log it anywhere.
+		settings.profiles = JSON.parse(response).data;
+		callback(settings.profiles);
+	})
+}
+
+function updateBalance(callback) {
+	if (!callback){
+		callback = function(){};
+	}
 
 	MRRAPI.getBalance(function (error, response) {
 		if (error) {
@@ -192,47 +264,53 @@ function updateEnpointData () {
 			return
 		}
 
-		console.log(response)
+		// If we fail, try again recursivly, otherwise, log this into the record.
 		if (!JSON.parse(response).success) {
-			throwError('Error getting balance, ' + JSON.parse(response).message)
-			return
+			//throwError('Error getting balance, ' + JSON.parse(response).message)
+			// Recursivly try.
+			return updateBalance();
+		} else {
+			var balance = JSON.parse(response)['data']['confirmed']
+			log('info', 'Current balance is: ' + balance, response)
+			log('curbal', balance, '', 'balance')
+			callback(balance);
 		}
-		var balance = JSON.parse(response)['data']['confirmed']
-		log('info', 'Current balance is: ' + balance, response)
-		log('curbal', balance, '', 'balance')
+		
 	})
+}
 
-	MRRAPI.listRigs({type: 'scrypt'}, function (err, resp) {
-		if (!!err)
-			return throwError('Error getting data from MRR.listRigs', err + '\n' + resp)
+function getRigList (args, callback){
+	if (!args){
+		args = {type: 'scrypt'};
+	}
+	if (!callback){
+		callback = function(){}
+	}
 
-		var body = JSON.parse(resp)
+	MRRAPI.listRigs(args, function (err, resp) {
+		if (!!err){
+			getRigList(args, callback);
+			return;
+		}
+			
+
+		try {
+			var body = JSON.parse(resp)
+		} catch (e) {
+			throwError("Error parsing JSON on getRigList");
+		}
 		if (body['success']) {
 			calculations['MiningRigRentals_last10'] = parseFloat(body['data']['info']['price']['last_10'])
 			miningRigs = true
-			if (alexandriaPool && florincoinInfo && miningRigs && libraryd)
+			if (alexandriaPool && florincoinInfo && miningRigs && libraryd){
 				doneUpdatingEndpoints()
+			}
+
+			callback(body);
 		} else {
-			throwError('Error getting data from MRR.listRigs', err + '\n' + resp)
+			getRigList(args, callback);
+			return;
 		}
-	})
-
-	// List the rentals and log that
-	MRRAPI.listMyRentals(function (error, response) {
-		if (error) {
-			console.log(error)
-			return
-		}
-		log('status', response, '', 'rentals')
-	})
-
-	MRRAPI.listProfiles(function (error, response) {
-		if (error) {
-			console.log(error)
-			return
-		}
-		// Just write to the settings, don't log it anywhere.
-		settings.profiles = JSON.parse(response).data
 	})
 }
 
@@ -276,12 +354,12 @@ function updateCalculations () {
 }
 
 function rentMiners () {
+	if (parseFloat(calculations['pool_margin']) < parseFloat(settings['min_margin'])){
+		console.log("\x1b[35m Not renting rigs, margin not met. (" + parseFloat(calculations['pool_margin']) + ' vs ' + parseFloat(settings['min_margin']) + ')\x1b[0m');
+		return;
+	}
 	// First search for rentals that are below the average price.
-	MRRAPI.listRigs({type: 'scrypt'}, function (err, resp) {
-		if (!!err)
-			return throwError('Error getting data from MRR.listRigs', err + '\n' + resp)
-
-		var body = JSON.parse(resp)
+	getRigList({type: 'scrypt'}, function (body) {		
 		if (body['success']) {
 			log('info', 'Successfully got rig list')
 			var rigs = body['data']['records']
@@ -302,24 +380,57 @@ function rentMiners () {
 			var totalCost = 0
 			var totalNewHash = 0
 			var amountToSpend = calculateSpendable(function (spendable) {
+				console.log("spendable: " + spendable);
+
+				var minMinerCost = 1;
+				var rentedOne = false;
+
 				for (var i = 0; i < goodRigs.length; i++) {
-					if (goodRigs[i].rpi >= settings['RPI_threshold'] && goodRigs[i]['price'] < calculations['MiningRigRentals_last10'] && (totalCost + (parseFloat(goodRigs[i].price_hr) * settings['rental_length_hrs'])) <= spendable && calculations['pool_margin'] >= settings['min_margin']) {
-						rigsToRent.push(goodRigs[i])
-						totalNewHash += parseFloat(goodRigs[i].hashrate)
-						totalCost += parseFloat(goodRigs[i].price_hr) * settings['rental_length_hrs']
-						calculations['pool_hashrate'] = parseInt(calculations['pool_hashrate']) + parseInt(goodRigs.hashrate)
-						goodRigs.splice(i, 1)
-						updateCalculations()
+					// Check to make sure the rpi threashold is ok, if not, get out of this loop and onto the next.
+					if (parseFloat(goodRigs[i].rpi) <= parseFloat(settings['RPI_threshold'])){
+						console.log("\x1b[33m Rig " + i + ' has a bad RPI, not renting!' + '\x1b[0m');
+						continue;
 					}
+
+					if (parseFloat(goodRigs[i]['price']) > (parseFloat(calculations['MiningRigRentals_last10']) * settings['mrr_last_10_max_multiplier'])){
+						console.log("\x1b[33m Rig " + i + ' is higher than MRR last 10, not renting! (' + goodRigs[i]['price'] + ' vs ' + parseFloat(calculations['MiningRigRentals_last10']) + '/' + (parseFloat(calculations['MiningRigRentals_last10']) * settings['mrr_last_10_max_multiplier']) + ')' + '\x1b[0m');
+						continue;
+					}
+
+					var minerCost = parseFloat(goodRigs[i].price_hr) * settings['rental_length_hrs'];
+
+					if ((totalCost + minerCost) >= spendable){
+						if (minerCost < minMinerCost)
+							minMinerCost = minerCost;
+
+						//console.log("\x1b[33m Rig " + i + ' would cost too much to rent, not renting! (' + parseFloat(goodRigs[i].price_hr) + ' * ' + settings['rental_length_hrs'] + ' = ' + minerCost + ')\x1b[0m');
+						continue;
+					}
+					
+					rigsToRent.push(goodRigs[i])
+					totalNewHash += parseFloat(goodRigs[i].hashrate)
+					totalCost += parseFloat(goodRigs[i].price_hr) * settings['rental_length_hrs']
+					calculations['pool_hashrate'] = parseInt(calculations['pool_hashrate']) + parseInt(goodRigs.hashrate)
+					goodRigs.splice(i, 1)
+					updateCalculations()
+
+					rentedOne = true;
 				}
-				for (var i = 0; i < goodRigs.length; i++) {
-					if (goodRigs[i].rpi > settings['RPI_threshold'] && (totalCost + (parseFloat(goodRigs[i].price_hr) * settings['rental_length_hrs'])) <= spendable && calculations['pool_margin'] >= settings['min_margin']) {
-						rigsToRent.push(goodRigs[i])
-						totalNewHash += parseFloat(goodRigs[i].hashrate)
-						totalCost += parseFloat(goodRigs[i].price_hr) * settings['rental_length_hrs']
-						calculations['pool_hashrate'] = parseInt(calculations['pool_hashrate']) + parseInt(goodRigs.hashrate)
-						updateCalculations()
-					}
+				// for (var i = 0; i < goodRigs.length; i++) {
+				// 	if (parseFloat(goodRigs[i].rpi) > parseFloat(settings['RPI_threshold']) && (totalCost + (parseFloat(goodRigs[i].price_hr) * settings['rental_length_hrs'])) <= spendable && calculations['pool_margin'] >= settings['min_margin']) {
+				// 		console.log("Here2");
+				// 		rigsToRent.push(goodRigs[i])
+				// 		totalNewHash += parseFloat(goodRigs[i].hashrate)
+				// 		totalCost += parseFloat(goodRigs[i].price_hr) * settings['rental_length_hrs']
+				// 		calculations['pool_hashrate'] = parseInt(calculations['pool_hashrate']) + parseInt(goodRigs.hashrate)
+				// 		updateCalculations()
+				// 	}
+				// }
+
+				if (!rentedOne && minMinerCost != 1){
+					var suggestedNewWeeklyMin = (minMinerCost/settings['rental_length_hrs']) * 168;
+					console.log("\x1b[31m Unable to rent any rigs, cheapest rental cost is " + minMinerCost.toFixed(8) + " but max budget is " + spendable.toFixed(8) + ". Please raise your weekly minimum to at least: " + suggestedNewWeeklyMin.toFixed(8) + ". \x1b[0m");
+					return;
 				}
 
 				console.log(rigsToRent)
@@ -327,20 +438,7 @@ function rentMiners () {
 				console.log('Cost to Rent: ' + totalCost)
 
 				if (rigsToRent.length !== 0) {
-					MRRAPI.getBalance(function (error, response) {
-						if (error) {
-							throwError('Error getting balance from MiningRigRentals!', error)
-							return
-						}
-
-						console.log(response)
-						if (!JSON.parse(response).success) {
-							throwError('Error getting balance, ' + JSON.parse(response).message)
-							return
-						}
-						var balance = JSON.parse(response)['data']['confirmed']
-						log('info', 'Current balance is: ' + balance, response)
-						log('curbal', balance, '', 'balance')
+					updateBalance(function (balance) {
 						if (parseFloat(balance) > totalCost) {
 							for (var i = 0; i < rigsToRent.length; i++) {
 								console.log(rigsToRent[i])
@@ -396,11 +494,18 @@ function log (type, message, extrainfo, table, callback) {
 	})
 }
 
-function throwError (message, extraInfo) {
+function logError (message, extraInfo){
 	if (!extraInfo)
 		extraInfo = ''
 
 	log('error', message, extraInfo, 'log')
+}
+
+function throwError (message, extraInfo) {
+	if (!extraInfo)
+		extraInfo = ''
+
+	logError(message, extraInfo);
 
 	console.log(message)
 	console.log(extraInfo)
@@ -463,14 +568,7 @@ function loadConfig (callback) {
 			}
 
 			if (settings.profileid === -1) {
-				MRRAPI.listProfiles(function (error, response) {
-					if (error) {
-						console.log(error)
-						return
-					}
-					// Just write to the settings, don't log it anywhere.
-					settings.profiles = JSON.parse(response).data
-
+				updateProfiles(function (profiles) {
 					console.log(' ======== PROFILES ======== ')
 					for (var i = settings.profiles.length - 1; i >= 0; i--) {
 						console.log('ID: ' + settings.profiles[i].id + ' | ' + 'Name: ' + settings.profiles[i].name)
@@ -618,6 +716,7 @@ function getLastRentalTimestamp (callback) {
 }
 
 var logHighDiff = false;
+var logWaiting = false;
 
 function rentIfYouCan() {
 	getLastRentalTimestamp(function(timestamp){
@@ -628,6 +727,7 @@ function rentIfYouCan() {
 		var lastRentalLatestPossible = nowTime - rentalPeriodSeconds;
 		// If we have not rented in more than our rental period (i.e. our last machine should now be expiring)
 		if (timestamp <= lastRentalLatestPossible){
+			logWaiting = false;
 
 			// Check to make sure that we are under the maximum difficulty right now
 			if (calculations['flo_difficulty'] > settings.max_difficulty){
@@ -639,6 +739,11 @@ function rentIfYouCan() {
 				logHighDiff = false;
 				rentMiners();
 			}
+		} else {
+			if (!logWaiting){
+				console.log("\x1b[36mJust rented a rig... Waiting for rental period to end...\x1b[0m");
+				logWaiting = true;
+			}
 		}
 	});
 }
@@ -649,8 +754,6 @@ loadConfig(function () {
 		console.log('autominer-api listening on port ' + port + ' using https!')
 		log('info', 'Started up autominer-api on port ' + port)
 	});
-
-	getLastRentalTimestamp(function(time){ console.log("Last: " + time + "\nNow: " + parseInt(Date.now()/1000)); });
 
 	// Initially update endpoint data on startup
 	updateEnpointData();
