@@ -8,7 +8,7 @@ var app = express()
 var bodyParser = require('body-parser')
 app.use(bodyParser.json()) // support json encoded bodies
 app.use(bodyParser.urlencoded({extended: true})) // support encoded bodies
-app.use(express.static('static')); // Include the autominer-frontend repository as the static
+app.use(express.static(__dirname + '/static')); // Include the autominer-frontend repository as the static
 
 var dbfile = __dirname + '/autominer.db'
 var exists = fs.existsSync(dbfile)
@@ -257,6 +257,7 @@ function updateProfiles(callback){
 
 		if (body['success']){
 			settings.profiles = body.data;
+			callback(settings.profiles)
 		} else {
 			updateProfiles();
 		}
@@ -369,6 +370,7 @@ function rentMiners () {
 		console.log("\x1b[35m" + calculations.status +  "\x1b[0m");
 		return;
 	}
+
 	// First search for rentals that are below the average price.
 	getRigList({type: 'scrypt'}, function (body) {
 		log('info', 'Successfully got rig list')
@@ -560,23 +562,27 @@ function loadConfig (callback) {
 			var weekly_budget = readlineSync.question('How much BTC would you like to spend each week?: ')
 			if (weekly_budget) {
 				settings.weekly_budget_btc = weekly_budget
+				saveConfig()
 			}
 
 			console.log('The "minimum margin" is the threashold at which it will begin mining. If this is set to 0, then it will always rent, however if you set it to anything higher, it will wait until the margin is met to begin mining.')
 			var minmargin = readlineSync.question('Please enter your "minimum margin": ')
-			if (weekly_budget) {
+			if (minmargin) {
 				settings.min_margin = minmargin
+				saveConfig()
 			}
 
 			console.log('The RPI threashold is the minimum machine avaialbilty that will be accepted. An RPI threashold of 80 is standard.')
 			var minrpi = readlineSync.question('Please enter your RPI threashold: ')
-			if (weekly_budget) {
+			if (minrpi) {
 				settings.RPI_threshold = minrpi
+				saveConfig()
 			}
 
 			var apikey = readlineSync.question('Please enter a password for this API: ')
-			if (weekly_budget) {
+			if (apikey) {
 				settings.api_key = apikey
+				saveConfig()
 			}
 
 			if (MRRAPI === null) {
@@ -586,8 +592,8 @@ function loadConfig (callback) {
 			if (settings.profileid === -1) {
 				updateProfiles(function (profiles) {
 					console.log(' ======== PROFILES ======== ')
-					for (var i = settings.profiles.length - 1; i >= 0; i--) {
-						console.log('ID: ' + settings.profiles[i].id + ' | ' + 'Name: ' + settings.profiles[i].name)
+					for (var i = profiles.length - 1; i >= 0; i--) {
+						console.log('ID: ' + profiles[i].id + ' | ' + 'Name: ' + profiles[i].name)
 					}
 					console.log(' ========================== ')
 
@@ -712,23 +718,34 @@ function calculateSpendable (callback) {
 }
 
 function getLastRentalTimestamp (callback) {
-	db.parallelize(function () {
-		db.all("SELECT * FROM balance ORDER BY id DESC;", function (err, rows) {
-			if (err) {
-				console.log(err)
-			}
+	try {
+		db.parallelize(function () {
+			db.all("SELECT * FROM balance ORDER BY id DESC;", function (err, rows) {
+				if (err) {
+					console.log(err)
+				}
 
-			for (var i = 0; i < rows.length; i++) {
-				if (rows[i].type && rows[i].type == 'spend' && rows[i].extrainfo){
-					var res = JSON.parse(rows[i].extrainfo);
-					if (res.success){
-						callback(rows[i].timestamp);
-						break;
+				var returned = false;
+
+				for (var i = 0; i < rows.length; i++) {
+					if (rows[i].type && rows[i].type == 'spend' && rows[i].extrainfo){
+						var res = JSON.parse(rows[i].extrainfo);
+						if (res.success){
+							returned = true;
+							callback(rows[i].timestamp);
+							break;
+						}
 					}
 				}
-			}
+
+				if (!returned){
+					callback(-1);
+				}
+			})
 		})
-	})
+	} catch (e) {
+		console.log(e);
+	}
 }
 
 var logHighDiff = false;
