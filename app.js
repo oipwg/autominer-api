@@ -25,6 +25,7 @@ db.serialize(function () {
 
 // Set the default calculations
 var calculations = {
+	'status': "Starting up...",
 	'pool_max_margin': 20,
 	'flo_difficulty': 0,
 	'pool_hashrate': 0,
@@ -355,117 +356,117 @@ function updateCalculations () {
 
 function rentMiners () {
 	if (parseFloat(calculations['pool_margin']) < parseFloat(settings['min_margin'])){
-		console.log("\x1b[35m Not renting rigs, margin not met. (" + parseFloat(calculations['pool_margin']) + ' vs ' + parseFloat(settings['min_margin']) + ')\x1b[0m');
+		calculations.status = "Not renting rigs, margin not met. (" + parseFloat(calculations['pool_margin']) + " vs " + parseFloat(settings['min_margin']) + ")";
+		console.log("\x1b[35m" + calculations.status +  "\x1b[0m");
 		return;
 	}
 	// First search for rentals that are below the average price.
-	getRigList({type: 'scrypt'}, function (body) {		
-		if (body['success']) {
-			log('info', 'Successfully got rig list')
-			var rigs = body['data']['records']
-			var goodRigs = []
-			var rigsToRent = []
-			// Add the rigs to the good rigs if they are available for at least a week and are below the average price.
-			for (var i = 0; i < rigs.length; i++) {
-				if (rigs[i]['minhrs'] <= settings.rental_length_hrs && rigs[i]['maxhrs'] >= settings.rental_length_hrs)
-					goodRigs.push(rigs[i])
+	getRigList({type: 'scrypt'}, function (body) {
+		log('info', 'Successfully got rig list')
+		var rigs = body['data']['records']
+		var goodRigs = []
+		var rigsToRent = []
+		// Add the rigs to the good rigs if they are available for at least a week and are below the average price.
+		for (var i = 0; i < rigs.length; i++) {
+			if (rigs[i]['minhrs'] <= settings.rental_length_hrs && rigs[i]['maxhrs'] >= settings.rental_length_hrs)
+				goodRigs.push(rigs[i])
+		}
+
+		console.log(goodRigs.length)
+		// Sort the rigs by RPI
+		goodRigs.sort(function (a, b) {
+			return parseFloat(a.price) - parseFloat(b.price)
+		})
+		// Check the RPI of each rig and add it to the rigsToRent as long as we are under the weekly budget.
+		var totalCost = 0
+		var totalNewHash = 0
+		var amountToSpend = calculateSpendable(function (spendable) {
+			console.log("spendable: " + spendable);
+
+			var minMinerCost = 1;
+			var rentedOne = false;
+
+			for (var i = 0; i < goodRigs.length; i++) {
+				// Check to make sure the rpi threashold is ok, if not, get out of this loop and onto the next.
+				if (parseFloat(goodRigs[i].rpi) <= parseFloat(settings['RPI_threshold'])){
+					console.log("\x1b[33m Rig " + i + ' has a bad RPI, not renting!' + '\x1b[0m');
+					continue;
+				}
+
+				if (parseFloat(goodRigs[i]['price']) > (parseFloat(calculations['MiningRigRentals_last10']) * settings['mrr_last_10_max_multiplier'])){
+					console.log("\x1b[33m Rig " + i + ' is higher than MRR last 10, not renting! (' + goodRigs[i]['price'] + ' vs ' + parseFloat(calculations['MiningRigRentals_last10']) + '/' + (parseFloat(calculations['MiningRigRentals_last10']) * settings['mrr_last_10_max_multiplier']) + ')' + '\x1b[0m');
+					continue;
+				}
+
+				var minerCost = parseFloat(goodRigs[i].price_hr) * settings['rental_length_hrs'];
+
+				if ((totalCost + minerCost) >= spendable){
+					if (minerCost < minMinerCost)
+						minMinerCost = minerCost;
+
+					//console.log("\x1b[33m Rig " + i + ' would cost too much to rent, not renting! (' + parseFloat(goodRigs[i].price_hr) + ' * ' + settings['rental_length_hrs'] + ' = ' + minerCost + ')\x1b[0m');
+					continue;
+				}
+				
+				rigsToRent.push(goodRigs[i])
+				totalNewHash += parseFloat(goodRigs[i].hashrate)
+				totalCost += parseFloat(goodRigs[i].price_hr) * settings['rental_length_hrs']
+				calculations['pool_hashrate'] = parseInt(calculations['pool_hashrate']) + parseInt(goodRigs.hashrate)
+				goodRigs.splice(i, 1)
+				updateCalculations()
+
+				rentedOne = true;
+			}
+			// for (var i = 0; i < goodRigs.length; i++) {
+			// 	if (parseFloat(goodRigs[i].rpi) > parseFloat(settings['RPI_threshold']) && (totalCost + (parseFloat(goodRigs[i].price_hr) * settings['rental_length_hrs'])) <= spendable && calculations['pool_margin'] >= settings['min_margin']) {
+			// 		console.log("Here2");
+			// 		rigsToRent.push(goodRigs[i])
+			// 		totalNewHash += parseFloat(goodRigs[i].hashrate)
+			// 		totalCost += parseFloat(goodRigs[i].price_hr) * settings['rental_length_hrs']
+			// 		calculations['pool_hashrate'] = parseInt(calculations['pool_hashrate']) + parseInt(goodRigs.hashrate)
+			// 		updateCalculations()
+			// 	}
+			// }
+
+			if (!rentedOne && minMinerCost != 1){
+				var suggestedNewWeeklyMin = (minMinerCost/settings['rental_length_hrs']) * 168;
+				calculations.status = "Unable to rent any rigs, cheapest rental cost is " + minMinerCost.toFixed(8) + " but max budget is " + spendable.toFixed(8) + ". Please raise your weekly minimum to at least: " + suggestedNewWeeklyMin.toFixed(8) + ".";
+				console.log("\x1b[31m" + calculations.status + "\x1b[0m");
+				return;
 			}
 
-			console.log(goodRigs.length)
-			// Sort the rigs by RPI
-			goodRigs.sort(function (a, b) {
-				return parseFloat(a.price) - parseFloat(b.price)
-			})
-			// Check the RPI of each rig and add it to the rigsToRent as long as we are under the weekly budget.
-			var totalCost = 0
-			var totalNewHash = 0
-			var amountToSpend = calculateSpendable(function (spendable) {
-				console.log("spendable: " + spendable);
+			console.log(rigsToRent)
+			console.log('Hashrate to Rent: ' + (totalNewHash / 1000000000))
+			console.log('Cost to Rent: ' + totalCost)
 
-				var minMinerCost = 1;
-				var rentedOne = false;
-
-				for (var i = 0; i < goodRigs.length; i++) {
-					// Check to make sure the rpi threashold is ok, if not, get out of this loop and onto the next.
-					if (parseFloat(goodRigs[i].rpi) <= parseFloat(settings['RPI_threshold'])){
-						console.log("\x1b[33m Rig " + i + ' has a bad RPI, not renting!' + '\x1b[0m');
-						continue;
-					}
-
-					if (parseFloat(goodRigs[i]['price']) > (parseFloat(calculations['MiningRigRentals_last10']) * settings['mrr_last_10_max_multiplier'])){
-						console.log("\x1b[33m Rig " + i + ' is higher than MRR last 10, not renting! (' + goodRigs[i]['price'] + ' vs ' + parseFloat(calculations['MiningRigRentals_last10']) + '/' + (parseFloat(calculations['MiningRigRentals_last10']) * settings['mrr_last_10_max_multiplier']) + ')' + '\x1b[0m');
-						continue;
-					}
-
-					var minerCost = parseFloat(goodRigs[i].price_hr) * settings['rental_length_hrs'];
-
-					if ((totalCost + minerCost) >= spendable){
-						if (minerCost < minMinerCost)
-							minMinerCost = minerCost;
-
-						//console.log("\x1b[33m Rig " + i + ' would cost too much to rent, not renting! (' + parseFloat(goodRigs[i].price_hr) + ' * ' + settings['rental_length_hrs'] + ' = ' + minerCost + ')\x1b[0m');
-						continue;
-					}
-					
-					rigsToRent.push(goodRigs[i])
-					totalNewHash += parseFloat(goodRigs[i].hashrate)
-					totalCost += parseFloat(goodRigs[i].price_hr) * settings['rental_length_hrs']
-					calculations['pool_hashrate'] = parseInt(calculations['pool_hashrate']) + parseInt(goodRigs.hashrate)
-					goodRigs.splice(i, 1)
-					updateCalculations()
-
-					rentedOne = true;
-				}
-				// for (var i = 0; i < goodRigs.length; i++) {
-				// 	if (parseFloat(goodRigs[i].rpi) > parseFloat(settings['RPI_threshold']) && (totalCost + (parseFloat(goodRigs[i].price_hr) * settings['rental_length_hrs'])) <= spendable && calculations['pool_margin'] >= settings['min_margin']) {
-				// 		console.log("Here2");
-				// 		rigsToRent.push(goodRigs[i])
-				// 		totalNewHash += parseFloat(goodRigs[i].hashrate)
-				// 		totalCost += parseFloat(goodRigs[i].price_hr) * settings['rental_length_hrs']
-				// 		calculations['pool_hashrate'] = parseInt(calculations['pool_hashrate']) + parseInt(goodRigs.hashrate)
-				// 		updateCalculations()
-				// 	}
-				// }
-
-				if (!rentedOne && minMinerCost != 1){
-					var suggestedNewWeeklyMin = (minMinerCost/settings['rental_length_hrs']) * 168;
-					console.log("\x1b[31m Unable to rent any rigs, cheapest rental cost is " + minMinerCost.toFixed(8) + " but max budget is " + spendable.toFixed(8) + ". Please raise your weekly minimum to at least: " + suggestedNewWeeklyMin.toFixed(8) + ". \x1b[0m");
-					return;
-				}
-
-				console.log(rigsToRent)
-				console.log('Hashrate to Rent: ' + (totalNewHash / 1000000000))
-				console.log('Cost to Rent: ' + totalCost)
-
-				if (rigsToRent.length !== 0) {
-					updateBalance(function (balance) {
-						if (parseFloat(balance) > totalCost) {
-							for (var i = 0; i < rigsToRent.length; i++) {
-								console.log(rigsToRent[i])
-								var args = {
-									'id': parseInt(rigsToRent[i].id),
-									'length': settings.rental_length_hrs,
-									'profileid': settings.profileid
-								}
-								console.log(args)
-								MRRAPI.rentRig(args, function (error, response) {
-									if (error) {
-										throwError('Error renting rig!', error + '\n' + response)
-									}
-									response = JSON.parse(response)
-									log('rental', 'Successfully rented rig: "' + response.data.rigid + '" for ' + response.data.price + ' BTC', JSON.stringify(response))
-									log('spend', response.data.price, JSON.stringify(response), 'balance')
-								})
+			if (rigsToRent.length !== 0) {
+				updateBalance(function (balance) {
+					if (parseFloat(balance) > totalCost) {
+						for (var i = 0; i < rigsToRent.length; i++) {
+							console.log(rigsToRent[i])
+							var args = {
+								'id': parseInt(rigsToRent[i].id),
+								'length': settings.rental_length_hrs,
+								'profileid': settings.profileid
 							}
-						} else {
-							throwError('Not enough balance in wallet to rent miners!')
+							console.log(args)
+							MRRAPI.rentRig(args, function (error, response) {
+								if (error) {
+									throwError('Error renting rig!', error + '\n' + response)
+								}
+								response = JSON.parse(response)
+								calculations.status = 'Successfully rented rig: "' + response.data.rigid + '" for ' + response.data.price + ' BTC';
+								log('rental', calculations.status, JSON.stringify(response))
+								log('spend', response.data.price, JSON.stringify(response), 'balance')
+							})
 						}
-					})
-				}
-			})
-		} else {
-			throwError('Error getting rig list from MiningRigRentals!', err + '\n' + resp + '\n' + body)
-		}
+					} else {
+						calculations.status = "Not enough balance in wallet to rent miners!";
+						throwError(calculations.status)
+					}
+				})
+			}
+		})
 	})
 }
 
@@ -732,7 +733,8 @@ function rentIfYouCan() {
 			// Check to make sure that we are under the maximum difficulty right now
 			if (calculations['flo_difficulty'] > settings.max_difficulty){
 				if (!logHighDiff){
-					console.log("Difficulty too high... Waiting to rent rigs...");
+					calculations.status = "Difficulty too high... Waiting to rent rigs...";
+					console.log(calculations.status);
 					logHighDiff = true;
 				}
 			} else {
@@ -741,7 +743,8 @@ function rentIfYouCan() {
 			}
 		} else {
 			if (!logWaiting){
-				console.log("\x1b[36mJust rented a rig... Waiting for rental period to end...\x1b[0m");
+				calculations.status = "Just rented a rig... Waiting for rental period to end..."; 
+				console.log("\x1b[36m" + calculations.status + "\x1b[0m");
 				logWaiting = true;
 			}
 		}
@@ -751,8 +754,9 @@ function rentIfYouCan() {
 loadConfig(function () {
 	var port = 3123
 	app.listen(port, function () {
-		console.log('autominer-api listening on port ' + port + ' using https!')
-		log('info', 'Started up autominer-api on port ' + port)
+		calculations.status = 'autominer-api listening on port ' + port + ' using http!';
+		console.log(calculations.status);
+		log('info', calculations.status);
 	});
 
 	// Initially update endpoint data on startup
