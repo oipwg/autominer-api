@@ -68,6 +68,7 @@ $ node app.js
 `/info`: Responds with JSON that includes the following data:
 ```javascript
 {
+	'status': "Just rented a rig... Waiting for rental period to end...", // String containing human legible information about the autominer-api status
 	'pool_hashrate': 978670933, 		// The current hashrate of the Alexandria Pool
 	'networkhashps': 1974515030, 		// Current hashrate of all florincoin miners
 	'MiningRigRentals_last10': 0.00014861, // Average cost per hash for an hour from the last 10 rented miners
@@ -116,6 +117,8 @@ $ node app.js
 {
 	'weekly_budget_btc': 1, // Maximum budget to spend per week in BTC
 	'min_margin': 10,		// Margin that you wish to make by mining
+	"max_difficulty": 1000, // The maximum difficulty of which you want to be mining
+    "mrr_last_10_max_multiplier": 1.5, // This value is multiplied against the MRR last 10 average price. For example, if the MRR last 10 average is `0.00001` per hash, and you are ok paying up to 150% of that, then you would use a multiplier of 1.5. This would allow it to pay up to `0.00015` per hash for example. This prevents the API from renting machines charging 4-6x the average.
 	'RPI_threshold': 80		// Minimum RPI allowed for renting devices
 	'max_difficulty': 1000, // If the difficulty goes higher than this value, the miner will stop renting more rigs. Once it drops back down below, it will start renting rigs again.
 	'api_key': '8uuijau898ue9823uj29iu8d',
