@@ -14,6 +14,9 @@ var dbfile = __dirname + '/autominer.db'
 var exists = fs.existsSync(dbfile)
 var db = new sqlite3.Database(dbfile)
 
+var installed = true;
+var installStepTwo = false;
+
 db.serialize(function () {
 	if (!exists) {
 		// Create the logs table
@@ -78,6 +81,84 @@ app.get('/info', function (req, res) {
 	pretty['offer_btc'] = parseFloat(pretty['offer_btc'].toFixed(8))
 
 	res.send(pretty)
+})
+
+app.post('/install', function (req, res) {
+	if (!installed){
+		if (req.body){
+			var data = fs.readFileSync(__dirname + '/settings.example.cfg');
+
+			settings = JSON.parse(data);
+
+			for (var key in req.body) {
+				if (req.body.hasOwnProperty(key)) {
+					if (isNaN(req.body[key])) {
+						if (req.body[key] === 'false')
+							settings[key] = false
+						else if (req.body[key] === 'true')
+							settings[key] = true
+						else
+							settings[key] = req.body[key]
+					} else {
+						settings[key] = parseFloat(req.body[key])
+					}
+				}
+			}
+
+			saveConfig();
+			installed = true;
+			installStepTwo = true;
+
+			res.send('{"success":true,"message":"Step one of install complete, please move on to step 2!"}')
+		}
+	} else {
+		res.send('{"success":false,"message":"You cannot install when you are already installed!"}')
+	}
+	
+})
+
+app.get('/install2', function (req, res){
+	if (installStepTwo){
+		if (MRRAPI === null) {
+			MRRAPI = new MiningRigRentalsAPI(settings.MRR_API_key, settings.MRR_API_secret)
+		}
+
+		updateProfiles(function(profiles){
+			res.send('{"success":true,"data":"' + JSON.stringify(settings.profiles) + '"}');
+		});
+	} else {
+		res.send('{"success":false,"message":"Not in install mode!"}')
+	}
+})
+
+app.post('/install2', function (req, res) {
+	if (installStepTwo){
+		if (req.body){
+			for (var key in req.body) {
+				if (req.body.hasOwnProperty(key)) {
+					if (isNaN(req.body[key])) {
+						if (req.body[key] === 'false')
+							settings[key] = false
+						else if (req.body[key] === 'true')
+							settings[key] = true
+						else
+							settings[key] = req.body[key]
+					} else {
+						settings[key] = parseFloat(req.body[key])
+					}
+				}
+			}
+
+			saveConfig();
+			installed = true;
+			installStepTwo = false;
+
+			res.send('{"success":true,"message":"Install Complete!"}')
+		}
+	} else {
+		res.send('{"success":false,"message":"You cannot install when you are already installed!"}')
+	}
+	
 })
 
 app.post('/config', function (req, res) {
@@ -465,7 +546,7 @@ function rentMiners () {
 								'length': settings.rental_length_hrs,
 								'profileid': settings.profileid
 							}
-							console.log(args)
+							//console.log(args)
 							MRRAPI.rentRig(args, function (error, response) {
 								if (error) {
 									throwError('Error renting rig!', error + '\n' + response)
@@ -530,8 +611,13 @@ function throwError (message, extraInfo) {
 }
 
 function loadConfig (callback) {
-	if (!fs.existsSync(__dirname + '/settings.cfg'))
-		copyFile(__dirname + '/settings.example.cfg', __dirname + '/settings.cfg')
+	if (!fs.existsSync(__dirname + '/settings.cfg')){
+		//copyFile(__dirname + '/settings.example.cfg', __dirname + '/settings.cfg')
+		installed = false;
+		return;
+	} else {
+		installed = true;
+	}
 
 	var data = fs.readFileSync(__dirname + '/settings.cfg')
 	try {
@@ -541,72 +627,9 @@ function loadConfig (callback) {
 		}
 		settings = JSON.parse(data)
 
-		if (settings.MRR_API_key === 'sample-api-key' || settings.MRR_API_secret === 'sample-api-secret' || settings.profileid === -1) {
-			console.log('Welcome to the Alexandria Autominer!\n')
-			console.log('It looks like you have not yet setup the Autominer yet, please follow the directions found here: bit.ly/2rAVVVi\n\n')
-
-			if (settings.MRR_API_key === 'sample-api-key') {
-				var api_key = readlineSync.question('Please enter your MiningRigRentals API Key: ')
-				settings.MRR_API_key = api_key
-
-				saveConfig()
-			}
-
-			if (settings.MRR_API_secret === 'sample-api-secret') {
-				var api_secret = readlineSync.question('Please enter your MiningRigRentals API Secret: ')
-				settings.MRR_API_secret = api_secret
-
-				saveConfig()
-			}
-
-			var weekly_budget = readlineSync.question('How much BTC would you like to spend each week?: ')
-			if (weekly_budget) {
-				settings.weekly_budget_btc = weekly_budget
-				saveConfig()
-			}
-
-			console.log('The "minimum margin" is the threashold at which it will begin mining. If this is set to 0, then it will always rent, however if you set it to anything higher, it will wait until the margin is met to begin mining.')
-			var minmargin = readlineSync.question('Please enter your "minimum margin": ')
-			if (minmargin) {
-				settings.min_margin = minmargin
-				saveConfig()
-			}
-
-			console.log('The RPI threashold is the minimum machine avaialbilty that will be accepted. An RPI threashold of 80 is standard.')
-			var minrpi = readlineSync.question('Please enter your RPI threashold: ')
-			if (minrpi) {
-				settings.RPI_threshold = minrpi
-				saveConfig()
-			}
-
-			var apikey = readlineSync.question('Please enter a password for this API: ')
-			if (apikey) {
-				settings.api_key = apikey
-				saveConfig()
-			}
-
-			if (MRRAPI === null) {
-				MRRAPI = new MiningRigRentalsAPI(settings.MRR_API_key, settings.MRR_API_secret)
-			}
-
-			if (settings.profileid === -1) {
-				updateProfiles(function (profiles) {
-					console.log(' ======== PROFILES ======== ')
-					for (var i = profiles.length - 1; i >= 0; i--) {
-						console.log('ID: ' + profiles[i].id + ' | ' + 'Name: ' + profiles[i].name)
-					}
-					console.log(' ========================== ')
-
-					var profileid = readlineSync.question('Please enter a PROFILE ID from the list above: ')
-					settings.profileid = profileid
-
-					saveConfig()
-
-					callback(settings)
-				})
-			} else {
-				callback(settings)
-			}
+		if (settings.profileid === -1) {
+			installStepTwo = true;
+			return;
 		} else {
 			if (MRRAPI === null) {
 				MRRAPI = new MiningRigRentalsAPI(settings.MRR_API_key, settings.MRR_API_secret)
@@ -783,25 +806,30 @@ function rentIfYouCan() {
 	});
 }
 
-loadConfig(function () {
-	var port = 3123
-	app.listen(port, function () {
-		calculations.status = 'autominer-api listening on port ' + port + ' using http!';
-		console.log(calculations.status);
-		log('info', calculations.status);
-	});
+function startup (){
+	loadConfig(function () {
+		clearTimeout(startupTimeout);
+		// Initially update endpoint data on startup
+		updateEnpointData();
+		// 								 minutes * seconds * ms
+		var endpoint = setInterval(updateEnpointData, 15 * 60 * 1000);
 
-	// Initially update endpoint data on startup
-	updateEnpointData();
-	// 								 minutes * seconds * ms
-	var endpoint = setInterval(updateEnpointData, 15 * 60 * 1000);
+		// After 10 seconds, rent the first batch of rigs, then every x amount of hours after that attempt to rent again.
+		setTimeout(rentIfYouCan, 10 * 1000);
+		// Run the rental checker every 5 minutes to make sure that we always rent if we can.
+		var rentals = setInterval(rentIfYouCan, 5 * 60 * 1000);
+		// settings.rental_length_hrs * 60 * 60 * 1000
+	})
+}
 
-	// After 10 seconds, rent the first batch of rigs, then every x amount of hours after that attempt to rent again.
-	setTimeout(rentIfYouCan, 10 * 1000);
-	// Run the rental checker every 5 minutes to make sure that we always rent if we can.
-	var rentals = setInterval(rentIfYouCan, 5 * 60 * 1000);
-	// settings.rental_length_hrs * 60 * 60 * 1000
-})
+var port = 3123;
+app.listen(port, function () {
+	calculations.status = 'autominer-api listening on port ' + port + ' using http!';
+	console.log(calculations.status);
+	log('info', calculations.status);
+});
+
+var startupTimeout = setTimeout(startup, 5 * 1000);
 
 process.stdin.resume()//so the program will not close instantly
 
