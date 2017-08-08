@@ -381,7 +381,6 @@ function rentMiners () {
 				goodRigs.push(rigs[i])
 		}
 
-		console.log(goodRigs.length)
 		// Sort the rigs by RPI
 		goodRigs.sort(function (a, b) {
 			return parseFloat(a.price) - parseFloat(b.price)
@@ -391,6 +390,7 @@ function rentMiners () {
 		var totalNewHash = 0
 		var amountToSpend = calculateSpendable(function (spendable) {
 			var minMinerCost = 1;
+			var minMultiplier = -1;
 			var rentedOne = false;
 
 			for (var i = 0; i < goodRigs.length; i++) {
@@ -400,7 +400,12 @@ function rentMiners () {
 					continue;
 				}
 
-				if (parseFloat(goodRigs[i]['price']) > (parseFloat(calculations['MiningRigRentals_last10']) * settings['mrr_last_10_max_multiplier'])){
+				var mrr_times_multiplier = parseFloat(calculations['MiningRigRentals_last10']) * settings['mrr_last_10_max_multiplier'];
+				if (parseFloat(goodRigs[i]['price']) > mrr_times_multiplier){
+					var suggestedMultiplier = parseFloat(goodRigs[i]['price']) / calculations['MiningRigRentals_last10'];
+
+					if (minMultiplier === -1 || minMultiplier > suggestedMultiplier)
+						minMultiplier = suggestedMultiplier;
 					//console.log("\x1b[33m Rig " + i + ' is higher than MRR last 10, not renting! (' + goodRigs[i]['price'] + ' vs ' + parseFloat(calculations['MiningRigRentals_last10']) + '/' + (parseFloat(calculations['MiningRigRentals_last10']) * settings['mrr_last_10_max_multiplier']) + ')' + '\x1b[0m');
 					continue;
 				}
@@ -442,6 +447,12 @@ function rentMiners () {
 				return;
 			}
 
+			if (!rentedOne && minMultiplier != -1){
+				calculations.status = "Your MRR last 10 multiplier might be too low, please check it or update it to at least " + minMultiplier.toFixed(2) + " to continue renting rigs immediately, or wait for prices to lower.";
+				console.log("\x1b[31m" + calculations.status + "\x1b[0m");
+				return;
+			}
+
 			if (rigsToRent.length !== 0) {
 				updateBalance(function (balance) {
 					if (parseFloat(balance) > totalCost) {
@@ -459,7 +470,7 @@ function rentMiners () {
 								}
 								response = JSON.parse(response)
 								calculations.status = 'Successfully rented rig: "' + response.data.rigid + '" for ' + response.data.price + ' BTC';
-								console.log("\x1b[32m" + calculations.status + "\x1b[0m");
+								console.log("\x1b[36m" + calculations.status + "\x1b[0m");
 								log('rental', calculations.status, JSON.stringify(response))
 								log('spend', response.data.price, JSON.stringify(response), 'balance')
 							})
@@ -748,7 +759,7 @@ function rentIfYouCan() {
 		} else {
 			if (!logWaiting){
 				calculations.status = "Just rented a rig... Waiting for rental period to end..."; 
-				console.log("\x1b[36m" + calculations.status + "\x1b[0m");
+				console.log("\x1b[33m" + calculations.status + "\x1b[0m");
 				logWaiting = true;
 			}
 		}
@@ -777,7 +788,7 @@ loadConfig(function () {
 
 process.stdin.resume()//so the program will not close instantly
 
-function exitHandler (err, options) {
+function exitHandler (options, err) {
 	log('error', 'autominer-api Shut Down', '', 'log', function () {
 		if (err) console.log(err.stack)
 		if (options.exit) process.exit()
