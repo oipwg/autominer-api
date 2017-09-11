@@ -1,6 +1,9 @@
 # Autominer API
 Automatically rent miners based on the current cost to mine the currency. You should run the frontend and only make calls from an SSL connection if including the API key. If you do not use an SSL secure connection you will be risking exposing your API keys to anybody who might be sniffing your traffic.
 
+## This branch for Command Line!
+Warning, might be outdated, but this commit here should work to run it via the command line. This might break in the future. Be warned.
+
 ## Installation
 Install Node.js then run the following commands to download and install the autominer-api.
 ```
