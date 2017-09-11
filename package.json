@@ -1,6 +1,6 @@
 {
   "name": "autominer-api",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Automatically rent miners based on the current cost to mine the currency.",
   "main": "app.js",
   "scripts": {
