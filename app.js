@@ -413,11 +413,13 @@ function doneUpdatingEndpoints () {
 }
 
 function updateCalculations () {
-	var FLO_reward = 25
+	var FLO_reward = 12.5; // Next to change ~9/1/18
 
-	calculations['flo_spotcost_btc'] = ((calculations['fbd_networkhashps'] * calculations['MiningRigRentals_last10']) / 1000000) / (2160 * FLO_reward);
+	calculations['mining_cost_per_sec'] = calculations['MiningRigRentals_last10'] / ( 1000000 * 86400);
+
+	calculations['flo_spotcost_btc'] = (calculations['fbd_networkhashps'] * calculations['mining_cost_per_sec'] * 40) / FLO_reward;
 	calculations['flo_spotcost_usd'] = calculations['flo_spotcost_btc'] * calculations['fmd_weighted_usd'] / calculations['fmd_weighted_btc']
-	calculations['pool_influence'] = calculations['pool_hashrate'] / (calculations['fbd_networkhashps'] - calculations['pool_hashrate'])
+	calculations['pool_influence'] = calculations['pool_hashrate'] / calculations['fbd_networkhashps'];
 
 	if (calculations['pool_influence'] <= 1) {
 		calculations['pool_influence_code'] = 0
@@ -441,7 +443,7 @@ function updateCalculations () {
 		calculations['market_conditions_multiplier'] = 0
 	}
 
-	calculations['offer_btc'] = calculations['flo_spotcost_btc'] * (1 + ((calculations['pool_max_margin'] / 100) * calculations['pool_influence_multiplier'] * calculations['market_conditions_multiplier'])) / calculations['fmd_weighted_usd'] * calculations['fmd_weighted_btc'];
+	calculations['offer_btc'] = calculations['flo_spotcost_btc'] * (1 + ((calculations['pool_max_margin'] / 100) * calculations['pool_influence_multiplier'] * calculations['market_conditions_multiplier'])) / calculations['fmd_weighted_btc'] * calculations['fmd_weighted_usd'];
 }
 
 function rentMiners () {
