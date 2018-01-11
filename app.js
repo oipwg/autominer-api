@@ -391,6 +391,7 @@ function getRigList (args, callback){
 		} catch (e) {
 			throwError("Error parsing JSON on getRigList");
 		}
+
 		if (body['success']) {
 			calculations['MiningRigRentals_last10'] = parseFloat(body['data']['info']['price']['last_10'])
 			miningRigs = true
@@ -615,12 +616,16 @@ function loadConfig (callback) {
 	if (!fs.existsSync(__dirname + '/settings.cfg')){
 		//copyFile(__dirname + '/settings.example.cfg', __dirname + '/settings.cfg')
 		installed = false;
-		return;
 	} else {
 		installed = true;
 	}
 
-	var data = fs.readFileSync(__dirname + '/settings.cfg')
+	var data = '';
+
+	if (fs.existsSync(__dirname + '/settings.cfg')){
+		data = fs.readFileSync(__dirname + '/settings.cfg')
+	}
+
 	try {
 		if (data === '') {
 			copyFile(__dirname + '/settings.example.cfg', __dirname + '/settings.cfg')
@@ -630,7 +635,74 @@ function loadConfig (callback) {
 
 		if (settings.profileid === -1) {
 			installStepTwo = true;
-			return;
+		} 
+
+		if (settings.MRR_API_key === 'sample-api-key' || settings.MRR_API_secret === 'sample-api-secret' || settings.profileid === -1) {
+			console.log('Welcome to the OIP Autominer!\n')
+			console.log('It looks like you have not yet setup the Autominer yet, please follow the directions found here: bit.ly/2rAVVVi\n\n')
+
+			if (settings.MRR_API_key === 'sample-api-key') {
+				var api_key = readlineSync.question('Please enter your MiningRigRentals API Key: ')
+				settings.MRR_API_key = api_key
+
+				saveConfig()
+			}
+
+			if (settings.MRR_API_secret === 'sample-api-secret') {
+				var api_secret = readlineSync.question('Please enter your MiningRigRentals API Secret: ')
+				settings.MRR_API_secret = api_secret
+
+				saveConfig()
+			}
+
+			var weekly_budget = readlineSync.question('How much BTC would you like to spend each week?: ')
+			if (weekly_budget) {
+				settings.weekly_budget_btc = weekly_budget
+				saveConfig()
+			}
+
+			console.log('The "minimum margin" is the threashold at which it will begin mining. If this is set to 0, then it will always rent, however if you set it to anything higher, it will wait until the margin is met to begin mining.')
+			var minmargin = readlineSync.question('Please enter your "minimum margin": ')
+			if (minmargin) {
+				settings.min_margin = minmargin
+				saveConfig()
+			}
+
+			console.log('The RPI threashold is the minimum machine avaialbilty that will be accepted. An RPI threashold of 80 is standard.')
+			var minrpi = readlineSync.question('Please enter your RPI threashold: ')
+			if (minrpi) {
+				settings.RPI_threshold = minrpi
+				saveConfig()
+			}
+
+			var apikey = readlineSync.question('Please enter a password for this API: ')
+			if (apikey) {
+				settings.api_key = apikey
+				saveConfig()
+			}
+
+			if (MRRAPI === null) {
+				MRRAPI = new MiningRigRentalsAPI(settings.MRR_API_key, settings.MRR_API_secret)
+			}
+
+			if (settings.profileid === -1) {
+				updateProfiles(function (profiles) {
+					console.log(' ======== PROFILES ======== ')
+					for (var i = profiles.length - 1; i >= 0; i--) {
+						console.log('ID: ' + profiles[i].id + ' | ' + 'Name: ' + profiles[i].name)
+					}
+					console.log(' ========================== ')
+
+					var profileid = readlineSync.question('Please enter a PROFILE ID from the list above: ')
+					settings.profileid = profileid
+
+					saveConfig()
+
+					callback(settings)
+				})
+			} else {
+				callback(settings)
+			}
 		} else {
 			if (MRRAPI === null) {
 				MRRAPI = new MiningRigRentalsAPI(settings.MRR_API_key, settings.MRR_API_secret)
@@ -829,6 +901,8 @@ app.listen(port, function () {
 	console.log(calculations.status);
 	log('info', calculations.status);
 });
+
+startup();
 
 var startupTimeout = setTimeout(startup, 5 * 1000);
 
