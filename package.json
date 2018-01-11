@@ -21,7 +21,7 @@
     "body-parser": "^1.15.2",
     "express": "^4.14.0",
     "https": "^1.0.0",
-    "miningrigrentals-api": "^1.0.3",
+    "miningrigrentals-api": "git+https://github.com/oipwg/miningrigrentals-api.git",
     "pem": "^1.9.7",
     "readline-sync": "^1.4.7",
     "request": "^2.72.0",
