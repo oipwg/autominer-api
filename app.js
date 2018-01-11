@@ -675,6 +675,18 @@ function loadConfig (callback) {
 				saveConfig()
 			}
 
+			console.log('Please enter the maximum difficulty at which you want to mine (Optional)')
+			var maxdiff = readlineSync.question('Please enter your Max Mining Difficulty (Optional, default is 3500): ')
+			if (maxdiff) {
+				if (isNaN(maxdiff)){
+					maxdiff = 3500;
+				} else {
+					maxdiff = parseFloat(maxdiff);
+				}
+				settings.max_difficulty = maxdiff
+				saveConfig()
+			}
+
 			var apikey = readlineSync.question('Please enter a password for this API: ')
 			if (apikey) {
 				settings.api_key = apikey
