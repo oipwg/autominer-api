@@ -453,7 +453,7 @@ function rentMiners () {
 	if (parseFloat(calculations['pool_margin']) < parseFloat(settings['min_margin'])){
 		calculations.status = "Not renting rigs, margin not met. (" + parseFloat(calculations['pool_margin']) + " vs " + parseFloat(settings['min_margin']) + ")";
 		console.log("\x1b[35m" + calculations.status +  "\x1b[0m");
-		log('info', calculations.status);
+		log('status', calculations.status, '', 'rentals');
 		return;
 	}
 
@@ -536,16 +536,15 @@ function rentMiners () {
 			if (!rentedOne && minMinerCost != 1){
 				var suggestedNewWeeklyMin = (minMinerCost/settings['rental_length_hrs']) * 168;
 				calculations.status = "Unable to rent any rigs, cheapest rental cost is " + minMinerCost.toFixed(8) + " but max budget is " + spendable.toFixed(8) + ". Please raise your weekly minimum to at least: " + suggestedNewWeeklyMin.toFixed(8) + ".";
-				log("")
 				console.log("\x1b[31m" + calculations.status + "\x1b[0m");
-				log('info', calculations.status);
+				log('status', calculations.status, '', 'rentals');
 				return;
 			}
 
 			if (!rentedOne && minMultiplier != -1){
 				calculations.status = "Your MRR last 10 multiplier might be too low, please check it or update it to at least " + minMultiplier.toFixed(2) + " to continue renting rigs immediately, or wait for prices to lower.";
 				console.log("\x1b[31m" + calculations.status + "\x1b[0m");
-				log('info', calculations.status);
+				log('status', calculations.status, '', 'rentals');
 				return;
 			}
 
@@ -900,7 +899,7 @@ function rentIfYouCan() {
 				if (!logHighDiff){
 					calculations.status = "Difficulty too high... Waiting to rent rigs...";
 					console.log(calculations.status);
-					log('info', calculations.status);
+					log('status', calculations.status, '', 'rentals');
 					logHighDiff = true;
 				}
 			} else {
@@ -911,7 +910,7 @@ function rentIfYouCan() {
 			if (!logWaiting){
 				calculations.status = "Just rented a rig... Waiting for rental period to end..."; 
 				console.log("\x1b[33m" + calculations.status + "\x1b[0m");
-				log('info', calculations.status);
+				log('status', calculations.status, '', 'rentals');
 				logWaiting = true;
 			}
 		}
@@ -938,7 +937,7 @@ var port = 8123 + parseInt(Math.random() * 100);
 app.listen(port, function () {
 	calculations.status = 'autominer-api listening on port ' + port + ' using http!';
 	console.log(calculations.status);
-	log('info', calculations.status);
+	log('status', calculations.status, '', 'rentals');
 });
 
 // If the app was started from the terminal, go through the regular startup :)
