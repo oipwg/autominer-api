@@ -985,7 +985,7 @@ module.exports = {
 
 		saveConfig()
 
-		var MRRAPI = new MiningRigRentalsAPI(settings.MRR_API_key, settings.MRR_API_secret)
+		MRRAPI = new MiningRigRentalsAPI(settings.MRR_API_key, settings.MRR_API_secret)
 
 		if (settings.profileid === -1) {
 			updateProfiles(function (profiles) {
