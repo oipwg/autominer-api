@@ -6,9 +6,11 @@ var fs = require('fs')
 var readlineSync = require('readline-sync')
 var app = express()
 var bodyParser = require('body-parser')
+var EventEmitter = require('eventemitter3')
 app.use(bodyParser.json()) // support json encoded bodies
 app.use(bodyParser.urlencoded({extended: true})) // support encoded bodies
 app.use(express.static(__dirname + '/static')); // Include the autominer-frontend repository as the static
+
 
 var dbfile = __dirname + '/autominer.db'
 var exists = fs.existsSync(dbfile)
@@ -949,3 +951,52 @@ process.on('SIGINT', exitHandler.bind(null, {exit: true}))
 
 //catches uncaught exceptions
 process.on('uncaughtException', exitHandler.bind(null, {exit: true}))
+
+var emitter = new EventEmitter();
+
+module.exports = {
+	setupInstall: function(api_key, api_secret, weekly_spend, min_margin, min_rpi, max_difficulty, api_password, profileCallback, error){
+		var data = '';
+
+		if (fs.existsSync(__dirname + '/settings.cfg')){
+			data = fs.readFileSync(__dirname + '/settings.cfg')
+		}
+
+		if (data === '') {
+			copyFile(__dirname + '/settings.example.cfg', __dirname + '/settings.cfg')
+			var data = fs.readFileSync(__dirname + '/settings.cfg')
+		}
+
+		settings = JSON.parse(data);
+
+		settings.MRR_API_key = api_key;
+		settings.MRR_API_secret = api_secret;
+		settings.weekly_budget_btc = weekly_spend;
+		settings.min_margin = min_margin;
+		settings.RPI_threshold = min_rpi;
+		settings.max_difficulty = max_difficulty;
+		settings.api_key = api_password;
+
+		saveConfig()
+
+		var MRRAPI = new MiningRigRentalsAPI(settings.MRR_API_key, settings.MRR_API_secret)
+
+		if (settings.profileid === -1) {
+			updateProfiles(function (profiles) {
+				profileCallback(profiles, function(){
+					settings.profileid = profileid
+
+					saveConfig()
+				});
+			})
+		} else {
+			callback(settings)
+		}
+	},
+	selectProfile: function(profile_num, success, error){
+
+	},
+	onEvent: function(eventType, runMe){
+		emitter.on(eventType, runMe);
+	}
+}
