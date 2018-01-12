@@ -919,7 +919,7 @@ function rentIfYouCan() {
 
 function startup (){
 	loadConfig(function () {
-		clearTimeout(startupTimeout);
+		// clearTimeout(startupTimeout);
 		// Initially update endpoint data on startup
 		updateEnpointData();
 		// 								 minutes * seconds * ms
@@ -945,7 +945,7 @@ if (require.main === module) {
     startup();
 }
 
-var startupTimeout = setTimeout(startup, 5 * 1000);
+// var startupTimeout = setTimeout(startup, 5 * 1000);
 
 process.stdin.resume()//so the program will not close instantly
 
