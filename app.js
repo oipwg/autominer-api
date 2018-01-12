@@ -998,7 +998,7 @@ module.exports = {
 				});
 			})
 		} else {
-			callback(settings)
+			
 		}
 	},
 	selectProfile: function(profile_num, success, error){
