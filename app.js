@@ -586,6 +586,8 @@ function rentMiners () {
 	})
 }
 
+var emitter = new EventEmitter();
+
 function log (type, message, extrainfo, table, callback) {
 	if (!extrainfo)
 		extrainfo = ''
@@ -609,6 +611,8 @@ function log (type, message, extrainfo, table, callback) {
 			callback()
 		})
 	})
+
+	emitter.emit("log", "Type: " + type + " | Message: " + message + " | Extra Info: " + extrainfo);
 }
 
 function logError (message, extraInfo){
@@ -616,6 +620,7 @@ function logError (message, extraInfo){
 		extraInfo = ''
 
 	log('error', message, extraInfo, 'log')
+	emitter.emit("error", message + " | " + extraInfo);
 }
 
 function throwError (message, extraInfo) {
@@ -923,14 +928,17 @@ function startup (){
 	})
 }
 
-var port = 3123;
+var port = 8123 + (Math.random() * 100);
 app.listen(port, function () {
 	calculations.status = 'autominer-api listening on port ' + port + ' using http!';
 	console.log(calculations.status);
 	log('info', calculations.status);
 });
 
-startup();
+// If the app was started from the terminal, go through the regular startup :)
+if (require.main === module) {
+    startup();
+}
 
 var startupTimeout = setTimeout(startup, 5 * 1000);
 
@@ -951,8 +959,6 @@ process.on('SIGINT', exitHandler.bind(null, {exit: true}))
 
 //catches uncaught exceptions
 process.on('uncaughtException', exitHandler.bind(null, {exit: true}))
-
-var emitter = new EventEmitter();
 
 module.exports = {
 	setupInstall: function(api_key, api_secret, weekly_spend, min_margin, min_rpi, max_difficulty, api_password, profileCallback, error){
@@ -983,10 +989,12 @@ module.exports = {
 
 		if (settings.profileid === -1) {
 			updateProfiles(function (profiles) {
-				profileCallback(profiles, function(){
+				profileCallback(profiles, function(profileid){
 					settings.profileid = profileid
 
 					saveConfig()
+
+					startup()
 				});
 			})
 		} else {
@@ -998,5 +1006,6 @@ module.exports = {
 	},
 	onEvent: function(eventType, runMe){
 		emitter.on(eventType, runMe);
-	}
+	},
+	startup: startup
 }
