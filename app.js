@@ -1012,5 +1012,8 @@ module.exports = {
 	onEvent: function(eventType, runMe){
 		emitter.on(eventType, runMe);
 	},
+	doesConfigExist: function(){
+		return fs.existsSync(__dirname + '/settings.cfg')
+	}
 	startup: startup
 }
