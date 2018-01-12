@@ -928,7 +928,7 @@ function startup (){
 	})
 }
 
-var port = 8123 + (Math.random() * 100);
+var port = 8123 + parseInt(Math.random() * 100);
 app.listen(port, function () {
 	calculations.status = 'autominer-api listening on port ' + port + ' using http!';
 	console.log(calculations.status);
