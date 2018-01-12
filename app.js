@@ -504,6 +504,11 @@ function rentMiners () {
 					//console.log("\x1b[33m Rig " + i + ' would cost too much to rent, not renting! (' + parseFloat(goodRigs[i].price_hr) + ' * ' + settings['rental_length_hrs'] + ' = ' + minerCost + ')\x1b[0m');
 					continue;
 				}
+
+				// Hard minimum of 0.00000100 on MRR
+				if (parseFloat(goodRigs[i].price_hr) * settings['rental_length_hrs'] < 0.00000100){
+					continue;
+				}
 				
 				rigsToRent.push(goodRigs[i])
 				totalNewHash += parseFloat(goodRigs[i].hashrate)
@@ -542,7 +547,11 @@ function rentMiners () {
 				updateBalance(function (balance) {
 					if (parseFloat(balance) > totalCost) {
 						for (var i = 0; i < rigsToRent.length; i++) {
-							//console.log(rigsToRent[i])
+							// MRR does not allow rentals that cost less than 0.00000100 BTC
+							if (rigsToRent[i].price_hr * settings.rental_length_hrs < 0.00000100){
+								continue;
+							}
+
 							var args = {
 								'id': parseInt(rigsToRent[i].id),
 								'length': settings.rental_length_hrs,
@@ -553,11 +562,16 @@ function rentMiners () {
 								if (error) {
 									throwError('Error renting rig!', error + '\n' + response)
 								}
-								response = JSON.parse(response)
-								calculations.status = 'Successfully rented rig: "' + response.data.rigid + '" for ' + response.data.price + ' BTC';
-								console.log("\x1b[36m" + calculations.status + "\x1b[0m");
-								log('rental', calculations.status, JSON.stringify(response))
-								log('spend', response.data.price, JSON.stringify(response), 'balance')
+								response = JSON.parse(response);
+								if (response.success){
+									calculations.status = 'Successfully rented rig: "' + response.data.rigid + '" for ' + response.data.price + ' BTC';
+									console.log("\x1b[36m" + calculations.status + "\x1b[0m");
+									log('rental', calculations.status, JSON.stringify(response))
+									log('spend', response.data.price, JSON.stringify(response), 'balance')
+								} else {
+									calculations.status = 'Error renting rig: ' + response.message;
+									console.log("\x1b[36m" + 'Error renting rig: ' + response.message + "\x1b[0m");
+								}
 							})
 						}
 					} else {
