@@ -1014,6 +1014,6 @@ module.exports = {
 	},
 	doesConfigExist: function(){
 		return fs.existsSync(__dirname + '/settings.cfg')
-	}
+	},
 	startup: startup
 }
