@@ -19,6 +19,8 @@ var db = new sqlite3.Database(dbfile)
 var installed = true;
 var installStepTwo = false;
 
+var enable_API = false;
+
 db.serialize(function () {
 	if (!exists) {
 		// Create the logs table
@@ -75,6 +77,9 @@ app.use(function (req, res, next) {
 })
 
 app.get('/info', function (req, res) {
+	if (!enable_API){
+		return res.send("API Not Enabled.")
+	}
 	var pretty = calculations
 	pretty['pool_hashrate'] = parseFloat(pretty['pool_hashrate'].toFixed(0))
 	pretty['flo_spotcost_btc'] = parseFloat(pretty['flo_spotcost_btc'].toFixed(8))
@@ -86,6 +91,9 @@ app.get('/info', function (req, res) {
 })
 
 app.post('/install', function (req, res) {
+	if (!enable_API){
+		return res.send("API Not Enabled.")
+	}
 	if (!installed){
 		if (req.body){
 			var data = fs.readFileSync(__dirname + '/settings.example.cfg');
@@ -120,6 +128,9 @@ app.post('/install', function (req, res) {
 })
 
 app.get('/install2', function (req, res){
+	if (!enable_API){
+		return res.send("API Not Enabled.")
+	}
 	if (installStepTwo){
 		if (MRRAPI === null) {
 			MRRAPI = new MiningRigRentalsAPI(settings.MRR_API_key, settings.MRR_API_secret)
@@ -134,6 +145,9 @@ app.get('/install2', function (req, res){
 })
 
 app.post('/install2', function (req, res) {
+	if (!enable_API){
+		return res.send("API Not Enabled.")
+	}
 	if (installStepTwo){
 		if (req.body){
 			for (var key in req.body) {
@@ -164,6 +178,9 @@ app.post('/install2', function (req, res) {
 })
 
 app.post('/config', function (req, res) {
+	if (!enable_API){
+		return res.send("API Not Enabled.")
+	}
 	if (req.body.api_key && req.body['api_key'] === settings['api_key']) {
 		for (var key in req.body) {
 			if (req.body.hasOwnProperty(key))
@@ -191,6 +208,9 @@ app.post('/config', function (req, res) {
 })
 
 app.post('/logs', function (req, res) {
+	if (!enable_API){
+		return res.send("API Not Enabled.")
+	}
 	if (req.body.api_key && req.body['api_key'] === settings['api_key'])
 		if (req.body.amount) {
 			getLogs(req.body.amount, function (err, logs) {
@@ -209,6 +229,9 @@ app.post('/logs', function (req, res) {
 })
 
 app.post('/rentals', function (req, res) {
+	if (!enable_API){
+		return res.send("API Not Enabled.")
+	}
 	if (req.body.api_key && req.body['api_key'] === settings['api_key'])
 		if (req.body.amount) {
 			getRentals(req.body.amount, function (err, logs) {
@@ -942,6 +965,8 @@ app.listen(port, function () {
 
 // If the app was started from the terminal, go through the regular startup :)
 if (require.main === module) {
+	// If started from terminal, enable API...
+	enable_API = true;
     startup();
 }
 
