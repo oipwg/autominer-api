@@ -1003,7 +1003,11 @@ module.exports = {
 				});
 			})
 		} else {
-			
+			profileCallback(undefined, function(){
+				saveConfig()
+
+				startup()
+			})
 		}
 	},
 	selectProfile: function(profile_num, success, error){
