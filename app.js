@@ -293,7 +293,7 @@ function updatePoolStats(){
 }
 
 function updateMiningInfo(){
-	request('https://api.alexandria.io/florincoin/getMiningInfo', function (error, response, body) {
+	request('https://snowflake.oip.fun/alexandria/v2/getMiningInfo', function (error, response, body) {
 		if (!error && response.statusCode === 200) {
 			calculations['fbd_networkhashps'] = JSON.parse(body)['networkhashps']
 			calculations['flo_difficulty'] = JSON.parse(body)['difficulty']
