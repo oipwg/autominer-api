@@ -19,6 +19,7 @@
   "homepage": "https://github.com/dloa/autominer-api#readme",
   "dependencies": {
     "body-parser": "^1.15.2",
+    "eventemitter3": "^3.1.0",
     "express": "^4.14.0",
     "https": "^1.0.0",
     "miningrigrentals-api": "git+https://github.com/oipwg/miningrigrentals-api.git",
